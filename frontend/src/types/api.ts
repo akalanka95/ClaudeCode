@@ -141,6 +141,19 @@ export interface CreateNoteBlockRequest {
   positionY?: number;
 }
 
+export type NoteUploadStatus = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+
+export interface NoteUploadResponse {
+  id: string;
+  nodeId: string;
+  status: NoteUploadStatus;
+  fileName: string;
+  resultNoteBlockId: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 export interface UpdateNoteBlockRequest {
   content?: string;
   color?: string;
