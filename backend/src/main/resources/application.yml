@@ -1,6 +1,4 @@
 spring:
-  config:
-    import: "optional:file:.env[.properties]"
   application:
     name: backend
   datasource:
@@ -13,16 +11,12 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
-  ai:
-    anthropic:
-      api-key: ${ANTHROPIC_API_KEY:}
-      timeout: 45s
-      chat:
-        model: claude-sonnet-5
 
 app:
   cors:
     allowed-origin: http://localhost:5173
+  sync-agent:
+    base-url: http://127.0.0.1:4100
 
 server:
   port: 8080

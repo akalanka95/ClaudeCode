@@ -11,35 +11,44 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.anthropic.AnthropicChatOptions;
-import org.springframework.ai.anthropic.AnthropicWebSearchTool;
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
 
 /**
- * Runs a subtopic sync in the background: asks Claude to search the web for recent material on
- * the node's topic and summarize it, then checks whether the result is materially new compared to
- * the last completed run for the same node (see {@link #isNearDuplicate}) before persisting it as
- * a full history entry.
+ * Runs a subtopic sync in the background: asks the sync-agent sidecar (which drives the Claude
+ * Agent SDK's web search under the caller's Claude Code subscription) for recent material on the
+ * node's topic, then checks whether the result is materially new compared to the last completed
+ * run for the same node (see {@link #isNearDuplicate}) before persisting it as a full history
+ * entry.
  */
 @Component
 class SubtopicSyncRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SubtopicSyncRunner.class);
     private static final double DUPLICATE_OVERLAP_THRESHOLD = 0.8;
+    private static final int CONNECT_TIMEOUT_MILLIS = 5_000;
+    private static final int READ_TIMEOUT_MILLIS = 90_000;
 
     private final SubtopicSyncRunRepository syncRunRepository;
     private final NodeRepository nodeRepository;
-    private final ChatClient chatClient;
+    private final RestClient syncAgentClient;
 
     SubtopicSyncRunner(
             SubtopicSyncRunRepository syncRunRepository,
             NodeRepository nodeRepository,
-            ChatClient.Builder chatClientBuilder) {
+            @Value("${app.sync-agent.base-url}") String syncAgentBaseUrl) {
         this.syncRunRepository = syncRunRepository;
         this.nodeRepository = nodeRepository;
-        this.chatClient = chatClientBuilder.build();
+
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(CONNECT_TIMEOUT_MILLIS);
+        requestFactory.setReadTimeout(READ_TIMEOUT_MILLIS);
+        this.syncAgentClient =
+                RestClient.builder().baseUrl(syncAgentBaseUrl).requestFactory(requestFactory).build();
     }
 
     @Async("syncTaskExecutor")
@@ -77,7 +86,7 @@ class SubtopicSyncRunner {
         } catch (Exception e) {
             log.warn("Subtopic sync failed for run {}: {}", runId, e.toString());
             run.setStatus(SyncStatus.FAILED);
-            run.setErrorMessage("Sync failed: " + e.getMessage());
+            run.setErrorMessage("Sync failed: " + describeFailure(e));
         } finally {
             run.setCompletedAt(Instant.now());
             syncRunRepository.save(run);
@@ -85,33 +94,21 @@ class SubtopicSyncRunner {
     }
 
     private SyncResult search(String topicLabel, List<SyncLink> previousLinks) {
-        AnthropicWebSearchTool webSearchTool =
-                AnthropicWebSearchTool.builder().maxUses(5).build();
+        List<String> previousUrls = previousLinks.stream().map(SyncLink::url).toList();
+        SearchRequest request = new SearchRequest(topicLabel, previousUrls);
+        return syncAgentClient
+                .post()
+                .uri("/search")
+                .body(request)
+                .retrieve()
+                .body(SyncResult.class);
+    }
 
-        String priorUrlsNote = previousLinks.isEmpty()
-                ? ""
-                : "Sources already surfaced in a previous sync (prefer new ones over repeating these): "
-                        + previousLinks.stream().map(SyncLink::url).collect(Collectors.joining(", "))
-                        + "\n";
-
-        String prompt =
-                """
-                Search the web for recent, notable developments, articles, or discussions related to
-                the interview-prep topic "%s" that would be useful for someone studying this topic for
-                technical interviews (news, official docs/release updates, notable write-ups or
-                discussions).
-                %s
-                Respond with a concise 2-4 sentence summary of what's new, and 3-6 of the best source
-                links, each with a short one-line note on why it's relevant.
-                """
-                        .formatted(topicLabel, priorUrlsNote);
-
-        return chatClient
-                .prompt()
-                .options(AnthropicChatOptions.builder().webSearchTool(webSearchTool))
-                .user(prompt)
-                .call()
-                .entity(SyncResult.class);
+    private String describeFailure(Exception e) {
+        if (e instanceof ResourceAccessException) {
+            return "sync-agent unreachable — is it running? (" + e.getMessage() + ")";
+        }
+        return e.getMessage();
     }
 
     private boolean isNearDuplicate(List<SyncLink> newLinks, List<SyncLink> previousLinks) {
@@ -124,4 +121,6 @@ class SubtopicSyncRunner {
         double overlapRatio = (double) overlapCount / newLinks.size();
         return overlapRatio >= DUPLICATE_OVERLAP_THRESHOLD;
     }
+
+    private record SearchRequest(String topicLabel, List<String> previousUrls) {}
 }
