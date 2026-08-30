@@ -15,6 +15,8 @@ spring:
 app:
   cors:
     allowed-origin: http://localhost:5173
+  sync-agent:
+    base-url: http://127.0.0.1:4100
 
 server:
   port: 8080

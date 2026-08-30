@@ -9,10 +9,13 @@ Spring Boot API.
 - **Backend**: Spring Boot 4 (Java 17, Maven), Spring Data JPA, Flyway, PostgreSQL.
 - **Frontend**: React 19 + TypeScript + Vite, React Flow (`@xyflow/react`) for the map canvas,
   TanStack Query for data fetching, React Router for drill-down navigation, Tailwind CSS.
+- **sync-agent**: a small Node service (Express + `@anthropic-ai/claude-agent-sdk`) that the
+  backend calls internally to run the subtopic Sync feature's web search, billed against your
+  Claude Code subscription rather than a separate Anthropic API account.
 
 ## Running locally
 
-Requires: Java 17+ (bundled Maven Wrapper, no separate Maven install needed), Node.js/npm,
+Requires: Java 17+ (bundled Maven Wrapper, no separate Maven install needed), Node.js 18+/npm,
 and either Docker or a local PostgreSQL instance.
 
 1. **Database**
@@ -31,7 +34,22 @@ and either Docker or a local PostgreSQL instance.
    (On Windows: `.\mvnw.cmd spring-boot:run`.) Flyway runs the schema migration automatically
    on startup. The API serves on `http://localhost:8080/api/v1`.
 
-3. **Frontend** (from `frontend/`)
+3. **sync-agent** (from `sync-agent/`) — powers the subtopic Sync button; the rest of the app
+   works without it, but Sync requests will fail until it's running.
+   ```
+   npm install
+   cp .env.example .env
+   ```
+   Put a Claude Code OAuth token in `.env` (`CLAUDE_CODE_OAUTH_TOKEN=...`, from running
+   `claude setup-token`). If you're already logged into Claude Code on this machine, the token
+   can be left blank — it falls back to your existing CLI login. Then:
+   ```
+   npm start
+   ```
+   Listens on `http://127.0.0.1:4100` (localhost only). Each Sync click spawns a real `claude`
+   CLI subprocess, so requests take noticeably longer than a direct API call.
+
+4. **Frontend** (from `frontend/`)
    ```
    npm install
    npm run dev
@@ -47,9 +65,13 @@ Open `http://localhost:5173` — it resolves the root board and lands you on the
 - Click a Topic to drill into its own board of subtopics — recursively, to any depth — with a
   breadcrumb trail back up.
 - A "Details" view per Topic for free-text notes.
+- A subtopic page's Sync button, which uses Claude's web search (via the `sync-agent` sidecar
+  and the Claude Agent SDK) to fetch and summarize recent developments related to that topic,
+  with a visible history per subtopic.
 
 Explicitly out of scope for this phase: authentication, cloud deployment, rich content
-authoring (handwriting/OCR/imports), AI features, multi-user collaboration, undo/redo, search.
+authoring (handwriting/OCR/imports), further AI features beyond subtopic Sync, multi-user
+collaboration, undo/redo, search.
 See `backend`/`frontend` source for structure; package-by-domain on the backend
 (`board/`, `node/`, `edge/`, `common/`, `config/`), feature folders on the frontend
 (`api/`, `hooks/`, `components/board/`, `pages/`).

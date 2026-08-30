@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getNode } from "../api/nodes";
 import type { NodeResponse } from "../types/api";
 import { ReferenceMaterialsPanel } from "../components/board/ReferenceMaterialsPanel";
+import { SyncPanel } from "../components/board/SyncPanel";
 
 export function SubTopicPage() {
   const { nodeId } = useParams<{ nodeId: string }>();
@@ -54,6 +55,7 @@ export function SubTopicPage() {
             </p>
           </div>
         </main>
+        <SyncPanel nodeId={nodeId} />
         <ReferenceMaterialsPanel nodeId={nodeId} />
       </div>
     </div>
