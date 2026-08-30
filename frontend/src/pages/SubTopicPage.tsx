@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getNode } from "../api/nodes";
 import type { NodeResponse } from "../types/api";
-import { ReferenceMaterialsPanel } from "../components/board/ReferenceMaterialsPanel";
-import { SyncPanel } from "../components/board/SyncPanel";
+import { useBoard } from "../hooks/useBoard";
+import { Breadcrumbs } from "../components/board/Breadcrumbs";
+import { SyncReferenceSidebar } from "../components/board/SyncReferenceSidebar";
+import { NoteBoard } from "../components/notes/NoteBoard";
 
 export function SubTopicPage() {
   const { nodeId } = useParams<{ nodeId: string }>();
@@ -31,32 +33,35 @@ export function SubTopicPage() {
     };
   }, [nodeId]);
 
+  const { data: board } = useBoard(node?.boardId);
+  const breadcrumbItems =
+    node && board
+      ? [...board.breadcrumb, { nodeId: node.id, label: node.label, boardId: node.boardId }]
+      : [];
+
   if (loading) {
     return <div className="p-4 text-slate-500">Loading...</div>;
   }
-  if (error || !nodeId) {
+  if (error || !nodeId || !node) {
     return <div className="p-4 text-red-600">{error ?? "Subtopic not found."}</div>;
   }
 
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center gap-3 border-b border-slate-200 px-4 py-2">
-        <button className="text-sm text-blue-600 hover:underline" onClick={() => navigate(-1)}>
+        <button
+          className="shrink-0 text-sm text-blue-600 hover:underline"
+          onClick={() => navigate(`/board/${node.boardId}`)}
+        >
           &larr; Back to board
         </button>
-        <h1 className="text-lg font-semibold text-slate-800">{node?.label ?? "Subtopic"}</h1>
+        {breadcrumbItems.length > 0 && <Breadcrumbs items={breadcrumbItems} />}
       </header>
       <div className="flex flex-1 overflow-hidden">
-        <main className="flex flex-1 items-center justify-center p-8">
-          <div className="max-w-md text-center text-slate-400">
-            <p className="text-sm">
-              This subtopic's dedicated view is still being designed — it'll hold this
-              subtopic's own content and nested subtopics in a future phase.
-            </p>
-          </div>
+        <main className="flex-1 overflow-hidden">
+          <NoteBoard nodeId={nodeId} />
         </main>
-        <SyncPanel nodeId={nodeId} />
-        <ReferenceMaterialsPanel nodeId={nodeId} />
+        <SyncReferenceSidebar nodeId={nodeId} />
       </div>
     </div>
   );

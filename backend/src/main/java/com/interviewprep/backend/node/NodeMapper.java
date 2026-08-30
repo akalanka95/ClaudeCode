@@ -21,6 +21,7 @@ public class NodeMapper {
 
         return new NodeResponse(
                 node.getId(),
+                node.getBoardId(),
                 node.getType(),
                 node.getLabel(),
                 node.getNoteText(),

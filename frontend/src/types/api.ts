@@ -2,6 +2,7 @@ export type NodeType = "TOPIC" | "NOTE";
 
 export interface NodeResponse {
   id: string;
+  boardId: string;
   type: NodeType;
   label: string | null;
   noteText: string | null;
@@ -117,4 +118,36 @@ export interface SyncRunResponse {
   errorMessage: string | null;
   createdAt: string;
   completedAt: string | null;
+}
+
+export interface NoteBlockResponse {
+  id: string;
+  nodeId: string;
+  content: string;
+  color: string;
+  positionX: number;
+  positionY: number;
+  width: number;
+  height: number;
+  minimized: boolean;
+  zIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNoteBlockRequest {
+  color?: string;
+  positionX?: number;
+  positionY?: number;
+}
+
+export interface UpdateNoteBlockRequest {
+  content?: string;
+  color?: string;
+  positionX?: number;
+  positionY?: number;
+  width?: number;
+  height?: number;
+  minimized?: boolean;
+  zIndex?: number;
 }
