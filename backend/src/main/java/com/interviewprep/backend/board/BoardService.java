@@ -86,6 +86,8 @@ public class BoardService {
                 node.getPositionX(),
                 node.getPositionY(),
                 node.getChildBoardId(),
-                node.getDetailsContent());
+                node.getDetailsContent(),
+                node.getWidth(),
+                node.getHeight());
     }
 }

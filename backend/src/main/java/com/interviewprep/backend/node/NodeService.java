@@ -68,6 +68,12 @@ public class NodeService {
         if (request.positionY() != null) {
             node.setPositionY(request.positionY());
         }
+        if (request.width() != null) {
+            node.setWidth(request.width());
+        }
+        if (request.height() != null) {
+            node.setHeight(request.height());
+        }
         return nodeRepository.save(node);
     }
 

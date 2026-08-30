@@ -1,11 +1,13 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Node,
   type Edge,
   type Connection,
@@ -20,6 +22,7 @@ import { useEdgeMutations } from "../../hooks/useEdgeMutations";
 import { TopicNode, type TopicNodeData } from "./TopicNode";
 import { NoteNode, type NoteNodeData } from "./NoteNode";
 import { AddNodeToolbar } from "./AddNodeToolbar";
+import { PromptModal } from "../common/PromptModal";
 
 const nodeTypes = { topic: TopicNode, note: NoteNode };
 
@@ -28,11 +31,33 @@ interface BoardCanvasProps {
 }
 
 export function BoardCanvas({ board }: BoardCanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <BoardCanvasInner board={board} />
+    </ReactFlowProvider>
+  );
+}
+
+function BoardCanvasInner({ board }: BoardCanvasProps) {
   const { createNode, updateNode, updatePositions, deleteNode } = useNodeMutations(board.boardId);
   const { createEdge, deleteEdge } = useEdgeMutations(board.boardId);
+  const { screenToFlowPosition } = useReactFlow();
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const [nodes, setNodes, onNodesChangeDefault] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChangeDefault] = useEdgesState<Edge>([]);
+  const [showTopicPrompt, setShowTopicPrompt] = useState(false);
+
+  function nextSpawnPosition() {
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    const center = rect
+      ? screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
+      : { x: 100, y: 100 };
+    return {
+      positionX: center.x + (Math.random() - 0.5) * 80,
+      positionY: center.y + (Math.random() - 0.5) * 80,
+    };
+  }
 
   useEffect(() => {
     setNodes(
@@ -57,8 +82,20 @@ export function BoardCanvas({ board }: BoardCanvasProps) {
           onChangeText: (noteText: string) => {
             updateNode.mutate({ nodeId: n.id, request: { noteText } });
           },
+          onResize: (width: number, height: number) => {
+            updateNode.mutate({ nodeId: n.id, request: { width, height } });
+            setNodes((nds) =>
+              nds.map((node) => (node.id === n.id ? { ...node, style: { width, height } } : node)),
+            );
+          },
         };
-        return { id: n.id, type: "note", position: { x: n.positionX, y: n.positionY }, data };
+        return {
+          id: n.id,
+          type: "note",
+          position: { x: n.positionX, y: n.positionY },
+          style: { width: n.width ?? undefined, height: n.height ?? undefined },
+          data,
+        };
       }),
     );
     setEdges(
@@ -70,27 +107,14 @@ export function BoardCanvas({ board }: BoardCanvasProps) {
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      const removals = changes.filter((c) => c.type === "remove");
-      const rest = changes.filter((c) => c.type !== "remove");
-      if (rest.length) {
-        onNodesChangeDefault(rest);
-      }
-      for (const removal of removals) {
-        if (removal.type !== "remove") continue;
-        const node = nodes.find((n) => n.id === removal.id);
-        const isTopic = node?.type === "topic";
-        const confirmed = window.confirm(
-          isTopic
-            ? "Delete this topic and everything nested under it? This cannot be undone."
-            : "Delete this note?",
-        );
-        if (confirmed) {
-          onNodesChangeDefault([removal]);
-          deleteNode.mutate(removal.id);
+      onNodesChangeDefault(changes);
+      for (const change of changes) {
+        if (change.type === "remove") {
+          deleteNode.mutate(change.id);
         }
       }
     },
-    [nodes, onNodesChangeDefault, deleteNode],
+    [onNodesChangeDefault, deleteNode],
   );
 
   const onEdgesChange = useCallback(
@@ -132,11 +156,13 @@ export function BoardCanvas({ board }: BoardCanvasProps) {
   );
 
   function handleAddTopic() {
-    const label = window.prompt("Topic name:");
-    if (!label || !label.trim()) return;
-    const trimmed = label.trim();
+    setShowTopicPrompt(true);
+  }
+
+  function createTopic(trimmed: string) {
+    setShowTopicPrompt(false);
     createNode.mutate(
-      { type: "TOPIC", label: trimmed, positionX: 100 + Math.random() * 200, positionY: 100 + Math.random() * 200 },
+      { type: "TOPIC", label: trimmed, ...nextSpawnPosition() },
       {
         onSuccess: (created) => {
           const data: TopicNodeData = {
@@ -167,13 +193,21 @@ export function BoardCanvas({ board }: BoardCanvasProps) {
 
   function handleAddNote() {
     createNode.mutate(
-      { type: "NOTE", noteText: "", positionX: 100 + Math.random() * 200, positionY: 100 + Math.random() * 200 },
+      { type: "NOTE", noteText: "", ...nextSpawnPosition() },
       {
         onSuccess: (created) => {
           const data: NoteNodeData = {
             noteText: created.noteText ?? "",
             onChangeText: (noteText: string) => {
               updateNode.mutate({ nodeId: created.id, request: { noteText } });
+            },
+            onResize: (width: number, height: number) => {
+              updateNode.mutate({ nodeId: created.id, request: { width, height } });
+              setNodes((nds) =>
+                nds.map((node) =>
+                  node.id === created.id ? { ...node, style: { width, height } } : node,
+                ),
+              );
             },
           };
           setNodes((nds) => [
@@ -191,7 +225,7 @@ export function BoardCanvas({ board }: BoardCanvasProps) {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full" ref={wrapperRef}>
       <div className="absolute left-4 top-4 z-10">
         <AddNodeToolbar onAddTopic={handleAddTopic} onAddNote={handleAddNote} />
       </div>
@@ -203,12 +237,22 @@ export function BoardCanvas({ board }: BoardCanvasProps) {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeDragStop={onNodeDragStop}
+        deleteKeyCode={["Delete", "Backspace"]}
         fitView
       >
         <Background />
         <Controls />
         <MiniMap />
       </ReactFlow>
+      {showTopicPrompt && (
+        <PromptModal
+          title="Topic name"
+          placeholder="e.g. Kafka"
+          confirmLabel="Add"
+          onSubmit={createTopic}
+          onCancel={() => setShowTopicPrompt(false)}
+        />
+      )}
     </div>
   );
 }

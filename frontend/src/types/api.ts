@@ -9,6 +9,8 @@ export interface NodeResponse {
   positionY: number;
   childBoardId: string | null;
   detailsContent: string | null;
+  width: number | null;
+  height: number | null;
 }
 
 export interface EdgeResponse {
@@ -54,6 +56,8 @@ export interface UpdateNodeRequest {
   noteText?: string;
   positionX?: number;
   positionY?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface UpdateDetailsRequest {
