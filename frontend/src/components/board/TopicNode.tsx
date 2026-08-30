@@ -6,7 +6,11 @@ export interface TopicNodeData extends Record<string, unknown> {
   label: string;
   childBoardId: string | null;
   isSubtopicBoard: boolean;
+  completed: boolean;
+  subtopicCount: number | null;
+  completedSubtopicCount: number | null;
   onRename: (label: string) => void;
+  onToggleComplete: (completed: boolean) => void;
 }
 
 export function TopicNode(props: NodeProps) {
@@ -58,12 +62,42 @@ export function TopicNode(props: NodeProps) {
           }}
         />
       ) : (
-        <div
-          className="cursor-pointer text-sm font-medium text-slate-800"
-          onDoubleClick={() => setEditing(true)}
-          onClick={openNode}
-        >
-          {data.label}
+        <div className="flex items-center gap-2">
+          {data.isSubtopicBoard && (
+            <input
+              type="checkbox"
+              checked={data.completed}
+              onChange={(e) => data.onToggleComplete(e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+              className="h-4 w-4 shrink-0 cursor-pointer"
+              aria-label={data.completed ? "Mark subtopic incomplete" : "Mark subtopic complete"}
+            />
+          )}
+          <div
+            className={`cursor-pointer text-sm font-medium text-slate-800 ${
+              data.isSubtopicBoard && data.completed ? "line-through text-slate-400" : ""
+            }`}
+            onDoubleClick={() => setEditing(true)}
+            onClick={openNode}
+          >
+            {data.label}
+          </div>
+        </div>
+      )}
+
+      {!data.isSubtopicBoard && !!data.subtopicCount && (
+        <div className="mt-1.5">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full rounded-full bg-emerald-500"
+              style={{
+                width: `${Math.round(((data.completedSubtopicCount ?? 0) / data.subtopicCount) * 100)}%`,
+              }}
+            />
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-400">
+            {data.completedSubtopicCount ?? 0}/{data.subtopicCount} subtopics
+          </div>
         </div>
       )}
 

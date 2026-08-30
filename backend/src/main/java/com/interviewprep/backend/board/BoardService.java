@@ -7,6 +7,7 @@ import com.interviewprep.backend.common.NotFoundException;
 import com.interviewprep.backend.edge.EdgeRepository;
 import com.interviewprep.backend.edge.dto.EdgeResponse;
 import com.interviewprep.backend.node.Node;
+import com.interviewprep.backend.node.NodeMapper;
 import com.interviewprep.backend.node.NodeRepository;
 import com.interviewprep.backend.node.dto.NodeResponse;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final NodeRepository nodeRepository;
     private final EdgeRepository edgeRepository;
+    private final NodeMapper nodeMapper;
 
     public UUID getRootBoardId() {
         return boardRepository
@@ -45,7 +47,7 @@ public class BoardService {
         }
 
         List<NodeResponse> nodes =
-                nodeRepository.findByBoardId(boardId).stream().map(this::toNodeResponse).toList();
+                nodeRepository.findByBoardId(boardId).stream().map(nodeMapper::toResponse).toList();
 
         List<EdgeResponse> edges = edgeRepository.findByBoardId(boardId).stream()
                 .map(e -> new EdgeResponse(e.getId(), e.getSourceNodeId(), e.getTargetNodeId()))
@@ -75,19 +77,5 @@ public class BoardService {
         return nodeRepository
                 .findById(nodeId)
                 .orElseThrow(() -> new NotFoundException("Node not found: " + nodeId));
-    }
-
-    private NodeResponse toNodeResponse(Node node) {
-        return new NodeResponse(
-                node.getId(),
-                node.getType(),
-                node.getLabel(),
-                node.getNoteText(),
-                node.getPositionX(),
-                node.getPositionY(),
-                node.getChildBoardId(),
-                node.getDetailsContent(),
-                node.getWidth(),
-                node.getHeight());
     }
 }

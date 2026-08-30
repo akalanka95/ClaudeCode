@@ -69,11 +69,22 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
           label: n.label ?? "Untitled",
           childBoardId: n.childBoardId,
           isSubtopicBoard,
+          completed: n.completed,
+          subtopicCount: n.subtopicCount,
+          completedSubtopicCount: n.completedSubtopicCount,
           onRename: (label: string) => {
             updateNode.mutate({ nodeId: n.id, request: { label } });
             setNodes((nds) =>
               nds.map((node) =>
                 node.id === n.id ? { ...node, data: { ...node.data, label } } : node,
+              ),
+            );
+          },
+          onToggleComplete: (completed: boolean) => {
+            updateNode.mutate({ nodeId: n.id, request: { completed } });
+            setNodes((nds) =>
+              nds.map((node) =>
+                node.id === n.id ? { ...node, data: { ...node.data, completed } } : node,
               ),
             );
           },
@@ -188,11 +199,22 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
             label: created.label ?? trimmed,
             childBoardId: created.childBoardId,
             isSubtopicBoard,
+            completed: created.completed,
+            subtopicCount: created.subtopicCount,
+            completedSubtopicCount: created.completedSubtopicCount,
             onRename: (newLabel: string) => {
               updateNode.mutate({ nodeId: created.id, request: { label: newLabel } });
               setNodes((nds) =>
                 nds.map((node) =>
                   node.id === created.id ? { ...node, data: { ...node.data, label: newLabel } } : node,
+                ),
+              );
+            },
+            onToggleComplete: (completed: boolean) => {
+              updateNode.mutate({ nodeId: created.id, request: { completed } });
+              setNodes((nds) =>
+                nds.map((node) =>
+                  node.id === created.id ? { ...node, data: { ...node.data, completed } } : node,
                 ),
               );
             },
