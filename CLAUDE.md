@@ -15,6 +15,13 @@ identify API changes → identify DB changes → write a plan → wait for appro
 whenever a requirement is described in conversation, not only when `/new-requirement` is used
 explicitly.
 
+**When a bug is reported — in conversation, or via `/bug-report`** — follow the workflow in
+`.claude/commands/bug-report.md`: reproduce with real evidence before trusting a code read, match
+the literal gesture/sequence the user hit, check library defaults explicitly, grep every
+construction site when a shared type's shape changes, and never run mutating automated tests
+against live/shared data by fragile selectors (e.g. "last DOM element") — target by ID, use
+disposable data, or ask first.
+
 Full design rationale for the original Phase 1 build lives in
 `C:\Users\User\.claude\plans\here-planning-to-build-cosmic-sunbeam.md` (data model tradeoffs,
 API design, milestone order) — background reading, not a substitute for `ARCHITECTURE.md`.
