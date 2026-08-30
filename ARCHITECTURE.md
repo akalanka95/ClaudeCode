@@ -69,7 +69,12 @@ working around it.
   referencing a deleted node cascade too. Don't add application-level recursive-delete logic —
   the DB already does it.
 - **Edges are scoped to a single Board** — never cross-board — and reference two Nodes on that
-  board.
+  board, with one documented exception: a subtopic board's read-only parent-topic anchor (see
+  `BoardResponse.parentNode`) lives on a different board (the one the parent node owns), and
+  `EdgeService.createEdge` explicitly allows an edge's source/target to be that exact parent node
+  id even though it isn't one of this board's own nodes. This is a narrow, explicit carve-out for
+  that one relationship — not a general cross-board edge feature; don't extend it to allow
+  arbitrary other-board node ids.
 
 ## Requirement intake workflow
 

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HomeRedirect } from "./pages/HomeRedirect";
 import { BoardPage } from "./pages/BoardPage";
 import { DetailsPage } from "./pages/DetailsPage";
+import { SubTopicPage } from "./pages/SubTopicPage";
 
 const queryClient = new QueryClient();
 
@@ -14,6 +15,7 @@ export function App() {
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/board/:boardId" element={<BoardPage />} />
           <Route path="/node/:nodeId/details" element={<DetailsPage />} />
+          <Route path="/node/:nodeId/subtopic" element={<SubTopicPage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

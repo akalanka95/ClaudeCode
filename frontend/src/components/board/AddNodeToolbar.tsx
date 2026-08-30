@@ -1,16 +1,21 @@
 interface AddNodeToolbarProps {
   onAddTopic: () => void;
   onAddNote: () => void;
+  addTopicLabel?: string;
 }
 
-export function AddNodeToolbar({ onAddTopic, onAddNote }: AddNodeToolbarProps) {
+export function AddNodeToolbar({
+  onAddTopic,
+  onAddNote,
+  addTopicLabel = "+ Topic",
+}: AddNodeToolbarProps) {
   return (
     <div className="flex gap-2">
       <button
         className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
         onClick={onAddTopic}
       >
-        + Topic
+        {addTopicLabel}
       </button>
       <button
         className="rounded bg-yellow-500 px-3 py-1.5 text-sm text-white hover:bg-yellow-600"
