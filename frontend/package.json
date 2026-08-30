@@ -11,10 +11,15 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
+    "@tiptap/extension-highlight": "^3.30.5",
+    "@tiptap/pm": "^3.30.5",
+    "@tiptap/react": "^3.30.5",
+    "@tiptap/starter-kit": "^3.30.5",
     "@xyflow/react": "^12.11.5",
     "axios": "^1.20.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-rnd": "^10.5.3",
     "react-router-dom": "^7.18.3"
   },
   "devDependencies": {

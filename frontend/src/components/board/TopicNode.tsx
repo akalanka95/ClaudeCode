@@ -107,9 +107,11 @@ export function TopicNode(props: NodeProps) {
             {data.isSubtopicBoard ? "Open subtopic" : "Open map"}
           </button>
         )}
-        <button className="hover:underline" onClick={() => navigate(`/node/${props.id}/details`)}>
-          Details
-        </button>
+        {!data.isSubtopicBoard && (
+          <button className="hover:underline" onClick={() => navigate(`/node/${props.id}/details`)}>
+            Details
+          </button>
+        )}
       </div>
     </div>
   );
