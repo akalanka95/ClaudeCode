@@ -21,10 +21,12 @@ import { useNodeMutations } from "../../hooks/useNodeMutations";
 import { useEdgeMutations } from "../../hooks/useEdgeMutations";
 import { TopicNode, type TopicNodeData } from "./TopicNode";
 import { NoteNode, type NoteNodeData } from "./NoteNode";
+import { ParentTopicNode, type ParentTopicNodeData } from "./ParentTopicNode";
 import { AddNodeToolbar } from "./AddNodeToolbar";
 import { PromptModal } from "../common/PromptModal";
 
-const nodeTypes = { topic: TopicNode, note: NoteNode };
+const nodeTypes = { topic: TopicNode, note: NoteNode, parentTopic: ParentTopicNode };
+const PARENT_ANCHOR_ID = "__parent__";
 
 interface BoardCanvasProps {
   board: BoardResponse;
@@ -47,6 +49,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
   const [nodes, setNodes, onNodesChangeDefault] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChangeDefault] = useEdgesState<Edge>([]);
   const [showTopicPrompt, setShowTopicPrompt] = useState(false);
+  const isSubtopicBoard = board.parentNode !== null;
 
   function nextSpawnPosition() {
     const rect = wrapperRef.current?.getBoundingClientRect();
@@ -60,56 +63,71 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
   }
 
   useEffect(() => {
-    setNodes(
-      board.nodes.map((n): Node => {
-        if (n.type === "TOPIC") {
-          const data: TopicNodeData = {
-            label: n.label ?? "Untitled",
-            childBoardId: n.childBoardId,
-            onRename: (label: string) => {
-              updateNode.mutate({ nodeId: n.id, request: { label } });
-              setNodes((nds) =>
-                nds.map((node) =>
-                  node.id === n.id ? { ...node, data: { ...node.data, label } } : node,
-                ),
-              );
-            },
-          };
-          return { id: n.id, type: "topic", position: { x: n.positionX, y: n.positionY }, data };
-        }
-        const data: NoteNodeData = {
-          noteText: n.noteText ?? "",
-          onChangeText: (noteText: string) => {
-            updateNode.mutate({ nodeId: n.id, request: { noteText } });
-          },
-          onResize: (width: number, height: number) => {
-            updateNode.mutate({ nodeId: n.id, request: { width, height } });
+    const mappedNodes = board.nodes.map((n): Node => {
+      if (n.type === "TOPIC") {
+        const data: TopicNodeData = {
+          label: n.label ?? "Untitled",
+          childBoardId: n.childBoardId,
+          isSubtopicBoard,
+          onRename: (label: string) => {
+            updateNode.mutate({ nodeId: n.id, request: { label } });
             setNodes((nds) =>
-              nds.map((node) => (node.id === n.id ? { ...node, style: { width, height } } : node)),
+              nds.map((node) =>
+                node.id === n.id ? { ...node, data: { ...node.data, label } } : node,
+              ),
             );
           },
         };
-        return {
-          id: n.id,
-          type: "note",
-          position: { x: n.positionX, y: n.positionY },
-          style: { width: n.width ?? undefined, height: n.height ?? undefined },
-          data,
-        };
-      }),
-    );
+        return { id: n.id, type: "topic", position: { x: n.positionX, y: n.positionY }, data };
+      }
+      const data: NoteNodeData = {
+        noteText: n.noteText ?? "",
+        onChangeText: (noteText: string) => {
+          updateNode.mutate({ nodeId: n.id, request: { noteText } });
+        },
+        onResize: (width: number, height: number) => {
+          updateNode.mutate({ nodeId: n.id, request: { width, height } });
+          setNodes((nds) =>
+            nds.map((node) => (node.id === n.id ? { ...node, style: { width, height } } : node)),
+          );
+        },
+      };
+      return {
+        id: n.id,
+        type: "note",
+        position: { x: n.positionX, y: n.positionY },
+        style: { width: n.width ?? undefined, height: n.height ?? undefined },
+        data,
+      };
+    });
+
+    if (board.parentNode) {
+      const parentData: ParentTopicNodeData = { label: board.parentNode.label ?? "Untitled" };
+      mappedNodes.unshift({
+        id: PARENT_ANCHOR_ID,
+        type: "parentTopic",
+        position: { x: -220, y: -160 },
+        draggable: false,
+        selectable: false,
+        deletable: false,
+        connectable: false,
+        data: parentData,
+      });
+    }
+
+    setNodes(mappedNodes);
     setEdges(
       board.edges.map((e): Edge => ({ id: e.id, source: e.sourceNodeId, target: e.targetNodeId })),
     );
     // Re-sync whenever we load a different board (navigation) or the server data changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [board.boardId, board.nodes, board.edges]);
+  }, [board.boardId, board.nodes, board.edges, board.parentNode, isSubtopicBoard]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       onNodesChangeDefault(changes);
       for (const change of changes) {
-        if (change.type === "remove") {
+        if (change.type === "remove" && change.id !== PARENT_ANCHOR_ID) {
           deleteNode.mutate(change.id);
         }
       }
@@ -148,6 +166,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
 
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
+      if (node.id === PARENT_ANCHOR_ID) return;
       updatePositions.mutate([
         { nodeId: node.id, positionX: node.position.x, positionY: node.position.y },
       ]);
@@ -168,6 +187,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
           const data: TopicNodeData = {
             label: created.label ?? trimmed,
             childBoardId: created.childBoardId,
+            isSubtopicBoard,
             onRename: (newLabel: string) => {
               updateNode.mutate({ nodeId: created.id, request: { label: newLabel } });
               setNodes((nds) =>
@@ -227,7 +247,11 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
   return (
     <div className="relative h-full w-full" ref={wrapperRef}>
       <div className="absolute left-4 top-4 z-10">
-        <AddNodeToolbar onAddTopic={handleAddTopic} onAddNote={handleAddNote} />
+        <AddNodeToolbar
+          onAddTopic={handleAddTopic}
+          onAddNote={handleAddNote}
+          addTopicLabel={isSubtopicBoard ? "+ SubTopic" : "+ Topic"}
+        />
       </div>
       <ReactFlow
         nodes={nodes}
@@ -246,7 +270,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
       </ReactFlow>
       {showTopicPrompt && (
         <PromptModal
-          title="Topic name"
+          title={isSubtopicBoard ? "SubTopic name" : "Topic name"}
           placeholder="e.g. Kafka"
           confirmLabel="Add"
           onSubmit={createTopic}

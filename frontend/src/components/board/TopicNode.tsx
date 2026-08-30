@@ -5,6 +5,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 export interface TopicNodeData extends Record<string, unknown> {
   label: string;
   childBoardId: string | null;
+  isSubtopicBoard: boolean;
   onRename: (label: string) => void;
 }
 
@@ -21,6 +22,14 @@ export function TopicNode(props: NodeProps) {
       data.onRename(trimmed);
     } else {
       setDraftLabel(data.label);
+    }
+  }
+
+  function openNode() {
+    if (data.isSubtopicBoard) {
+      navigate(`/node/${props.id}/subtopic`);
+    } else if (data.childBoardId) {
+      navigate(`/board/${data.childBoardId}`);
     }
   }
 
@@ -52,19 +61,16 @@ export function TopicNode(props: NodeProps) {
         <div
           className="cursor-pointer text-sm font-medium text-slate-800"
           onDoubleClick={() => setEditing(true)}
-          onClick={() => data.childBoardId && navigate(`/board/${data.childBoardId}`)}
+          onClick={openNode}
         >
           {data.label}
         </div>
       )}
 
       <div className="mt-1 flex gap-2 text-xs text-blue-600">
-        {data.childBoardId && (
-          <button
-            className="hover:underline"
-            onClick={() => navigate(`/board/${data.childBoardId}`)}
-          >
-            Open map
+        {(data.isSubtopicBoard || data.childBoardId) && (
+          <button className="hover:underline" onClick={openNode}>
+            {data.isSubtopicBoard ? "Open subtopic" : "Open map"}
           </button>
         )}
         <button className="hover:underline" onClick={() => navigate(`/node/${props.id}/details`)}>

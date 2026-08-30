@@ -79,3 +79,16 @@ export interface ApiErrorBody {
   error: string;
   message: string;
 }
+
+export interface ReferenceMaterialResponse {
+  id: string;
+  nodeId: string;
+  url: string;
+  title: string | null;
+  createdAt: string;
+}
+
+export interface CreateReferenceMaterialRequest {
+  url: string;
+  title?: string | null;
+}
