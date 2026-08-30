@@ -11,4 +11,6 @@ public record NodeResponse(
         double positionX,
         double positionY,
         UUID childBoardId,
-        String detailsContent) {}
+        String detailsContent,
+        Double width,
+        Double height) {}

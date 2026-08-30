@@ -53,6 +53,12 @@ public class Node {
     @Column(name = "details_content", columnDefinition = "text")
     private String detailsContent;
 
+    @Column(name = "width")
+    private Double width;
+
+    @Column(name = "height")
+    private Double height;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
