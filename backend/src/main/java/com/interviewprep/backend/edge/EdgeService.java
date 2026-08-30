@@ -1,8 +1,11 @@
 package com.interviewprep.backend.edge;
 
+import com.interviewprep.backend.board.Board;
+import com.interviewprep.backend.board.BoardRepository;
 import com.interviewprep.backend.common.ConflictException;
 import com.interviewprep.backend.common.NotFoundException;
 import com.interviewprep.backend.edge.dto.CreateEdgeRequest;
+import com.interviewprep.backend.node.Node;
 import com.interviewprep.backend.node.NodeRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +18,23 @@ public class EdgeService {
 
     private final EdgeRepository edgeRepository;
     private final NodeRepository nodeRepository;
+    private final BoardRepository boardRepository;
 
     @Transactional
     public Edge createEdge(UUID boardId, CreateEdgeRequest request) {
-        if (!nodeRepository.existsById(request.sourceNodeId())
-                || !nodeRepository.existsById(request.targetNodeId())) {
-            throw new NotFoundException("Source or target node not found");
-        }
+        Board board = boardRepository
+                .findById(boardId)
+                .orElseThrow(() -> new NotFoundException("Board not found: " + boardId));
+        Node source = nodeRepository
+                .findById(request.sourceNodeId())
+                .orElseThrow(() -> new NotFoundException("Source or target node not found"));
+        Node target = nodeRepository
+                .findById(request.targetNodeId())
+                .orElseThrow(() -> new NotFoundException("Source or target node not found"));
+
+        requireOnBoardOrParent(source, board, boardId);
+        requireOnBoardOrParent(target, board, boardId);
+
         if (edgeRepository.existsByBoardIdAndSourceNodeIdAndTargetNodeId(
                 boardId, request.sourceNodeId(), request.targetNodeId())) {
             throw new ConflictException("Edge already exists between these nodes");
@@ -31,6 +44,20 @@ public class EdgeService {
         edge.setSourceNodeId(request.sourceNodeId());
         edge.setTargetNodeId(request.targetNodeId());
         return edgeRepository.save(edge);
+    }
+
+    /**
+     * Edges are otherwise scoped to a single board — the one documented exception is the
+     * read-only parent-topic anchor shown on a subtopic board, which lives on a different board
+     * (the one this board's parent node owns).
+     */
+    private void requireOnBoardOrParent(Node node, Board board, UUID boardId) {
+        boolean onBoard = node.getBoardId().equals(boardId);
+        boolean isParentAnchor = node.getId().equals(board.getParentNodeId());
+        if (!onBoard && !isParentAnchor) {
+            throw new IllegalArgumentException(
+                    "Node " + node.getId() + " does not belong to board " + boardId);
+        }
     }
 
     @Transactional

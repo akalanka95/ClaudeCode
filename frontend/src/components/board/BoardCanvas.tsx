@@ -26,7 +26,6 @@ import { AddNodeToolbar } from "./AddNodeToolbar";
 import { PromptModal } from "../common/PromptModal";
 
 const nodeTypes = { topic: TopicNode, note: NoteNode, parentTopic: ParentTopicNode };
-const PARENT_ANCHOR_ID = "__parent__";
 
 interface BoardCanvasProps {
   board: BoardResponse;
@@ -50,6 +49,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
   const [edges, setEdges, onEdgesChangeDefault] = useEdgesState<Edge>([]);
   const [showTopicPrompt, setShowTopicPrompt] = useState(false);
   const isSubtopicBoard = board.parentNode !== null;
+  const parentAnchorId = board.parentNode?.id ?? null;
 
   function nextSpawnPosition() {
     const rect = wrapperRef.current?.getBoundingClientRect();
@@ -104,13 +104,13 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
     if (board.parentNode) {
       const parentData: ParentTopicNodeData = { label: board.parentNode.label ?? "Untitled" };
       mappedNodes.unshift({
-        id: PARENT_ANCHOR_ID,
+        id: board.parentNode.id,
         type: "parentTopic",
         position: { x: -220, y: -160 },
         draggable: false,
         selectable: false,
         deletable: false,
-        connectable: false,
+        connectable: true,
         data: parentData,
       });
     }
@@ -127,12 +127,12 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
     (changes: NodeChange[]) => {
       onNodesChangeDefault(changes);
       for (const change of changes) {
-        if (change.type === "remove" && change.id !== PARENT_ANCHOR_ID) {
+        if (change.type === "remove" && change.id !== parentAnchorId) {
           deleteNode.mutate(change.id);
         }
       }
     },
-    [onNodesChangeDefault, deleteNode],
+    [onNodesChangeDefault, deleteNode, parentAnchorId],
   );
 
   const onEdgesChange = useCallback(
@@ -166,12 +166,12 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
 
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
-      if (node.id === PARENT_ANCHOR_ID) return;
+      if (node.id === parentAnchorId) return;
       updatePositions.mutate([
         { nodeId: node.id, positionX: node.position.x, positionY: node.position.y },
       ]);
     },
-    [updatePositions],
+    [updatePositions, parentAnchorId],
   );
 
   function handleAddTopic() {

@@ -85,6 +85,9 @@ export interface ReferenceMaterialResponse {
   nodeId: string;
   url: string;
   title: string | null;
+  previewTitle: string | null;
+  previewDescription: string | null;
+  previewImageUrl: string | null;
   createdAt: string;
 }
 

@@ -34,6 +34,15 @@ public class ReferenceMaterial {
     @Column(name = "title")
     private String title;
 
+    @Column(name = "preview_title", length = 500)
+    private String previewTitle;
+
+    @Column(name = "preview_description", columnDefinition = "text")
+    private String previewDescription;
+
+    @Column(name = "preview_image_url", columnDefinition = "text")
+    private String previewImageUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

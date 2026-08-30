@@ -15,6 +15,7 @@ public class ReferenceMaterialService {
 
     private final ReferenceMaterialRepository referenceMaterialRepository;
     private final NodeRepository nodeRepository;
+    private final LinkPreviewFetcher linkPreviewFetcher;
 
     @Transactional(readOnly = true)
     public List<ReferenceMaterial> list(UUID nodeId) {
@@ -29,6 +30,12 @@ public class ReferenceMaterialService {
         reference.setNodeId(nodeId);
         reference.setUrl(request.url());
         reference.setTitle(request.title());
+
+        LinkPreview preview = linkPreviewFetcher.fetch(request.url());
+        reference.setPreviewTitle(preview.title());
+        reference.setPreviewDescription(preview.description());
+        reference.setPreviewImageUrl(preview.imageUrl());
+
         return referenceMaterialRepository.save(reference);
     }
 

@@ -41,6 +41,13 @@ public class ReferenceMaterialController {
 
     private ReferenceMaterialResponse toResponse(ReferenceMaterial reference) {
         return new ReferenceMaterialResponse(
-                reference.getId(), reference.getNodeId(), reference.getUrl(), reference.getTitle(), reference.getCreatedAt());
+                reference.getId(),
+                reference.getNodeId(),
+                reference.getUrl(),
+                reference.getTitle(),
+                reference.getPreviewTitle(),
+                reference.getPreviewDescription(),
+                reference.getPreviewImageUrl(),
+                reference.getCreatedAt());
     }
 }
