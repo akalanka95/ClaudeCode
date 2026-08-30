@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="610" viewBox="0 0 1000 610" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1000" height="610" fill="#ffffff"/>
+
+  <!-- ===== Collection tree edges ===== -->
+  <g stroke="#94a3b8" stroke-width="1.6" fill="none">
+    <line x1="500" y1="76" x2="180" y2="164"/>
+    <line x1="500" y1="76" x2="500" y2="164"/>
+    <line x1="500" y1="76" x2="820" y2="164"/>
+
+    <line x1="180" y1="164" x2="110" y2="210"/>
+    <line x1="180" y1="164" x2="260" y2="210"/>
+
+    <line x1="500" y1="164" x2="430" y2="210"/>
+    <line x1="500" y1="164" x2="580" y2="210"/>
+
+    <line x1="820" y1="164" x2="755" y2="210"/>
+    <line x1="820" y1="164" x2="920" y2="210"/>
+  </g>
+
+  <!-- Collection -->
+  <rect x="420" y="40" width="160" height="36" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="500" y="63" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Collection</text>
+  <text x="500" y="26" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">interface</text>
+
+  <!-- List / Set / Queue -->
+  <rect x="110" y="130" width="140" height="34" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="180" y="152" text-anchor="middle" font-size="13" font-weight="600" fill="#1e3a8a">List</text>
+
+  <rect x="430" y="130" width="140" height="34" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="500" y="152" text-anchor="middle" font-size="13" font-weight="600" fill="#1e3a8a">Set</text>
+
+  <rect x="750" y="130" width="140" height="34" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="820" y="152" text-anchor="middle" font-size="13" font-weight="600" fill="#1e3a8a">Queue</text>
+
+  <!-- List impls -->
+  <rect x="45" y="210" width="130" height="34" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <text x="110" y="232" text-anchor="middle" font-size="12.5" fill="#14532d">ArrayList</text>
+
+  <rect x="195" y="210" width="130" height="34" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <text x="260" y="232" text-anchor="middle" font-size="12.5" fill="#14532d">LinkedList</text>
+
+  <!-- Set impls -->
+  <rect x="365" y="210" width="130" height="34" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <text x="430" y="232" text-anchor="middle" font-size="12.5" fill="#14532d">HashSet</text>
+
+  <rect x="515" y="210" width="130" height="34" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <text x="580" y="232" text-anchor="middle" font-size="12.5" fill="#14532d">TreeSet</text>
+
+  <!-- Queue impls -->
+  <rect x="685" y="210" width="140" height="34" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <text x="755" y="232" text-anchor="middle" font-size="12.5" fill="#14532d">PriorityQueue</text>
+
+  <rect x="850" y="210" width="140" height="34" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <text x="920" y="232" text-anchor="middle" font-size="12.5" fill="#14532d">ArrayDeque</text>
+
+  <!-- divider -->
+  <line x1="40" y1="310" x2="960" y2="310" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- ===== Map tree (separate root, not a Collection) ===== -->
+  <g stroke="#94a3b8" stroke-width="1.6" fill="none">
+    <line x1="500" y1="416" x2="430" y2="460"/>
+    <line x1="500" y1="416" x2="570" y2="460"/>
+  </g>
+
+  <rect x="420" y="380" width="160" height="36" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="500" y="403" text-anchor="middle" font-size="14" font-weight="600" fill="#78350f">Map</text>
+  <text x="500" y="366" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">interface (not a Collection)</text>
+
+  <rect x="370" y="460" width="120" height="34" rx="6" fill="#fde68a" stroke="#d97706" stroke-width="1.4"/>
+  <text x="430" y="482" text-anchor="middle" font-size="12.5" fill="#78350f">HashMap</text>
+
+  <rect x="510" y="460" width="120" height="34" rx="6" fill="#fde68a" stroke="#d97706" stroke-width="1.4"/>
+  <text x="570" y="482" text-anchor="middle" font-size="12.5" fill="#78350f">TreeMap</text>
+
+  <!-- Legend -->
+  <g transform="translate(680,380)">
+    <rect x="0" y="0" width="280" height="200" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="14" y="24" font-size="12.5" font-weight="700" fill="#0f172a">Java Collections Framework</text>
+    <rect x="14" y="38" width="14" height="14" rx="3" fill="#dbeafe" stroke="#3b82f6"/>
+    <text x="35" y="49.5" font-size="11" fill="#334155">Interface</text>
+    <rect x="14" y="60" width="14" height="14" rx="3" fill="#dcfce7" stroke="#22c55e"/>
+    <text x="35" y="71.5" font-size="11" fill="#334155">Implementation class</text>
+    <rect x="14" y="82" width="14" height="14" rx="3" fill="#fde68a" stroke="#d97706"/>
+    <text x="35" y="93.5" font-size="11" fill="#334155">Map hierarchy (key-value)</text>
+    <text x="14" y="116" font-size="10.5" fill="#475569">ArrayList: O(1) random access</text>
+    <text x="14" y="132" font-size="10.5" fill="#475569">LinkedList: O(1) insert/remove</text>
+    <text x="14" y="148" font-size="10.5" fill="#475569">HashSet/Map: O(1), no order</text>
+    <text x="14" y="164" font-size="10.5" fill="#475569">TreeSet/Map: O(log n), sorted</text>
+    <text x="14" y="180" font-size="10.5" fill="#475569">PriorityQueue: heap-ordered</text>
+  </g>
+
+  <text x="40" y="600" font-size="10.5" fill="#94a3b8">Simplified overview - not all JCF interfaces/classes shown</text>
+</svg>
