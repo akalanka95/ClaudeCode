@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { getNode } from "../api/nodes";
 import type { NodeResponse } from "../types/api";
 import { useBoard } from "../hooks/useBoard";
@@ -9,7 +9,6 @@ import { NoteBoard } from "../components/notes/NoteBoard";
 
 export function SubTopicPage() {
   const { nodeId } = useParams<{ nodeId: string }>();
-  const navigate = useNavigate();
   const [node, setNode] = useState<NodeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,13 +47,7 @@ export function SubTopicPage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center gap-3 border-b border-slate-200 px-4 py-2">
-        <button
-          className="shrink-0 text-sm text-blue-600 hover:underline"
-          onClick={() => navigate(`/board/${node.boardId}`)}
-        >
-          &larr; Back to board
-        </button>
+      <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
         {breadcrumbItems.length > 0 && <Breadcrumbs items={breadcrumbItems} />}
       </header>
       <div className="flex flex-1 overflow-hidden">

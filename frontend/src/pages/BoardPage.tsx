@@ -17,7 +17,7 @@ export function BoardPage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="border-b border-slate-200 px-4 py-2">
+      <header className="border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
         <Breadcrumbs items={board.breadcrumb} />
       </header>
       <div className="flex flex-1 overflow-hidden">
