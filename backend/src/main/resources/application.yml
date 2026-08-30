@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: "optional:file:.env[.properties]"
   application:
     name: backend
   datasource:
@@ -14,6 +16,7 @@ spring:
   ai:
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:}
+      timeout: 45s
       chat:
         model: claude-sonnet-5
 

@@ -16,7 +16,6 @@ import org.springframework.ai.anthropic.AnthropicWebSearchTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Runs a subtopic sync in the background: asks Claude to search the web for recent material on
@@ -44,12 +43,16 @@ class SubtopicSyncRunner {
     }
 
     @Async("syncTaskExecutor")
-    @Transactional
     public void run(UUID runId) {
         SubtopicSyncRun run = syncRunRepository.findById(runId).orElse(null);
         if (run == null) {
             return;
         }
+        // Each save below is its own short transaction (Spring Data JPA's default per-method
+        // transaction) and commits immediately. Deliberately not wrapping this whole method in
+        // one @Transactional block: that would hold the RUNNING update uncommitted — invisible to
+        // polling GET requests — for as long as the slow external search() call takes, making a
+        // run look stuck at PENDING from the outside even while it's actually progressing.
         run.setStatus(SyncStatus.RUNNING);
         syncRunRepository.save(run);
 

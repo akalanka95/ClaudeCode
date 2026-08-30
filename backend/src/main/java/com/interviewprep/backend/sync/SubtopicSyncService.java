@@ -17,12 +17,15 @@ public class SubtopicSyncService {
     private final NodeRepository nodeRepository;
     private final SubtopicSyncRunner syncRunner;
 
-    @Transactional
     public SubtopicSyncRun triggerSync(UUID nodeId) {
         if (!nodeRepository.existsById(nodeId)) {
             throw new NotFoundException("Node not found: " + nodeId);
         }
 
+        // Deliberately not @Transactional: save() must commit (each Spring Data repository call
+        // is its own transaction) before the async dispatch below, or the background thread can
+        // query for this row before an enclosing transaction commits it, find nothing, and quietly
+        // bail — leaving the run stuck at PENDING forever with no error anywhere.
         SubtopicSyncRun run = new SubtopicSyncRun();
         run.setNodeId(nodeId);
         run.setStatus(SyncStatus.PENDING);
