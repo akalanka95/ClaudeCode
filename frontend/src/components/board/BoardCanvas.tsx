@@ -22,10 +22,12 @@ import { useEdgeMutations } from "../../hooks/useEdgeMutations";
 import { TopicNode, type TopicNodeData } from "./TopicNode";
 import { NoteNode, type NoteNodeData } from "./NoteNode";
 import { ParentTopicNode, type ParentTopicNodeData } from "./ParentTopicNode";
+import { FloatingEdge } from "./FloatingEdge";
 import { AddNodeToolbar } from "./AddNodeToolbar";
 import { PromptModal } from "../common/PromptModal";
 
 const nodeTypes = { topic: TopicNode, note: NoteNode, parentTopic: ParentTopicNode };
+const edgeTypes = { floating: FloatingEdge };
 
 interface BoardCanvasProps {
   board: BoardResponse;
@@ -128,7 +130,12 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
 
     setNodes(mappedNodes);
     setEdges(
-      board.edges.map((e): Edge => ({ id: e.id, source: e.sourceNodeId, target: e.targetNodeId })),
+      board.edges.map((e): Edge => ({
+        id: e.id,
+        source: e.sourceNodeId,
+        target: e.targetNodeId,
+        type: "floating",
+      })),
     );
     // Re-sync whenever we load a different board (navigation) or the server data changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,7 +173,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
           onSuccess: (edge) => {
             setEdges((eds) => [
               ...eds,
-              { id: edge.id, source: edge.sourceNodeId, target: edge.targetNodeId },
+              { id: edge.id, source: edge.sourceNodeId, target: edge.targetNodeId, type: "floating" },
             ]);
           },
         },
@@ -279,6 +286,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
