@@ -11,6 +11,9 @@ export interface NodeResponse {
   detailsContent: string | null;
   width: number | null;
   height: number | null;
+  completed: boolean;
+  subtopicCount: number | null;
+  completedSubtopicCount: number | null;
 }
 
 export interface EdgeResponse {
@@ -58,6 +61,7 @@ export interface UpdateNodeRequest {
   positionY?: number;
   width?: number;
   height?: number;
+  completed?: boolean;
 }
 
 export interface UpdateDetailsRequest {

@@ -13,4 +13,7 @@ public record NodeResponse(
         UUID childBoardId,
         String detailsContent,
         Double width,
-        Double height) {}
+        Double height,
+        boolean completed,
+        Integer subtopicCount,
+        Integer completedSubtopicCount) {}

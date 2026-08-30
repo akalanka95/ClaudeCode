@@ -74,6 +74,9 @@ public class NodeService {
         if (request.height() != null) {
             node.setHeight(request.height());
         }
+        if (request.completed() != null) {
+            node.setCompleted(request.completed());
+        }
         return nodeRepository.save(node);
     }
 

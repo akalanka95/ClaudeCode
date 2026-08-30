@@ -53,6 +53,9 @@ public class Node {
     @Column(name = "details_content", columnDefinition = "text")
     private String detailsContent;
 
+    @Column(name = "completed", nullable = false)
+    private boolean completed;
+
     @Column(name = "width")
     private Double width;
 
