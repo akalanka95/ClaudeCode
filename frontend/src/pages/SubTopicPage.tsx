@@ -6,6 +6,7 @@ import { useBoard } from "../hooks/useBoard";
 import { Breadcrumbs } from "../components/board/Breadcrumbs";
 import { SyncReferenceSidebar } from "../components/board/SyncReferenceSidebar";
 import { NoteBoard } from "../components/notes/NoteBoard";
+import { AskChatGptButton } from "../components/details/AskChatGptButton";
 
 export function SubTopicPage() {
   const { nodeId } = useParams<{ nodeId: string }>();
@@ -56,6 +57,7 @@ export function SubTopicPage() {
         </main>
         <SyncReferenceSidebar nodeId={nodeId} />
       </div>
+      <AskChatGptButton />
     </div>
   );
 }
