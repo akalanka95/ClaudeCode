@@ -95,3 +95,22 @@ export interface CreateReferenceMaterialRequest {
   url: string;
   title?: string | null;
 }
+
+export type SyncRunStatus = "PENDING" | "RUNNING" | "COMPLETED" | "NO_NEW_UPDATES" | "FAILED";
+
+export interface SyncLink {
+  title: string | null;
+  url: string;
+  note: string | null;
+}
+
+export interface SyncRunResponse {
+  id: string;
+  nodeId: string;
+  status: SyncRunStatus;
+  summary: string | null;
+  links: SyncLink[] | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}

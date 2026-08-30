@@ -25,11 +25,17 @@ and either Docker or a local PostgreSQL instance.
    `backend/src/main/resources/application.yml`.
 
 2. **Backend** (from `backend/`)
+
+   Set an `ANTHROPIC_API_KEY` environment variable (used by the subtopic Sync feature to call
+   Claude's web search tool via Spring AI) before starting the backend:
    ```
+   export ANTHROPIC_API_KEY=sk-ant-...
    ./mvnw spring-boot:run
    ```
-   (On Windows: `.\mvnw.cmd spring-boot:run`.) Flyway runs the schema migration automatically
-   on startup. The API serves on `http://localhost:8080/api/v1`.
+   (On Windows PowerShell: `$env:ANTHROPIC_API_KEY = "sk-ant-..."; .\mvnw.cmd spring-boot:run`.)
+   Flyway runs the schema migration automatically on startup. The API serves on
+   `http://localhost:8080/api/v1`. The backend will still start without the key set, but Sync
+   requests will fail.
 
 3. **Frontend** (from `frontend/`)
    ```
@@ -47,9 +53,12 @@ Open `http://localhost:5173` — it resolves the root board and lands you on the
 - Click a Topic to drill into its own board of subtopics — recursively, to any depth — with a
   breadcrumb trail back up.
 - A "Details" view per Topic for free-text notes.
+- A subtopic page's Sync button, which uses Claude's web search (via Spring AI) to fetch and
+  summarize recent developments related to that topic, with a visible history per subtopic.
 
 Explicitly out of scope for this phase: authentication, cloud deployment, rich content
-authoring (handwriting/OCR/imports), AI features, multi-user collaboration, undo/redo, search.
+authoring (handwriting/OCR/imports), further AI features beyond subtopic Sync, multi-user
+collaboration, undo/redo, search.
 See `backend`/`frontend` source for structure; package-by-domain on the backend
 (`board/`, `node/`, `edge/`, `common/`, `config/`), feature folders on the frontend
 (`api/`, `hooks/`, `components/board/`, `pages/`).
