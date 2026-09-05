@@ -4,6 +4,8 @@ Phase 1: create topics, connect them on a node-graph map, drill into subtopics r
 and attach plain-text details/notes to any topic. Everything persists to Postgres via a
 Spring Boot API.
 
+**Live demo**: _add your deployed URL here once you've followed `DEPLOYMENT.md`_.
+
 ## Stack
 
 - **Backend**: Spring Boot 4 (Java 17, Maven), Spring Data JPA, Flyway, PostgreSQL.
@@ -57,6 +59,17 @@ and either Docker or a local PostgreSQL instance.
    Serves on `http://localhost:5173`, configured (via `.env`) to call the backend above.
 
 Open `http://localhost:5173` — it resolves the root board and lands you on the top-level map.
+
+### Run with Docker
+
+```
+docker compose up --build
+```
+
+Brings up Postgres, the backend, and the frontend together (`http://localhost:5173`) with no
+manual Maven/npm steps. The Sync feature is disabled in this build (see `DEPLOYMENT.md`); the
+`sync-agent` sidecar still needs to be run manually if you want it. See `DEPLOYMENT.md` for
+deploying this to free-tier hosting for a live demo link.
 
 ## What's implemented (Phase 1)
 

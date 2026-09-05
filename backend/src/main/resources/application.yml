@@ -2,9 +2,9 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/interviewprep
-    username: interviewprep
-    password: interviewprep
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/interviewprep}
+    username: ${SPRING_DATASOURCE_USERNAME:interviewprep}
+    password: ${SPRING_DATASOURCE_PASSWORD:interviewprep}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -18,9 +18,9 @@ spring:
 
 app:
   cors:
-    allowed-origin: http://localhost:5173
+    allowed-origin: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
   sync-agent:
-    base-url: http://127.0.0.1:4100
+    base-url: ${APP_SYNC_AGENT_BASE_URL:http://127.0.0.1:4100}
 
 server:
-  port: 8080
+  port: ${PORT:8080}

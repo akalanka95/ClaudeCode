@@ -8,6 +8,8 @@ import { SyncReferenceSidebar } from "../components/board/SyncReferenceSidebar";
 import { NoteBoard } from "../components/notes/NoteBoard";
 import { AskChatGptButton } from "../components/details/AskChatGptButton";
 
+const SYNC_ENABLED = import.meta.env.VITE_ENABLE_SYNC !== "false";
+
 export function SubTopicPage() {
   const { nodeId } = useParams<{ nodeId: string }>();
   const [node, setNode] = useState<NodeResponse | null>(null);
@@ -55,7 +57,7 @@ export function SubTopicPage() {
         <main className="flex-1 overflow-hidden">
           <NoteBoard nodeId={nodeId} />
         </main>
-        <SyncReferenceSidebar nodeId={nodeId} />
+        {SYNC_ENABLED && <SyncReferenceSidebar nodeId={nodeId} />}
       </div>
       <AskChatGptButton />
     </div>

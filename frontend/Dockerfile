@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+COPY . .
+ARG VITE_API_BASE_URL=http://localhost:8080/api/v1
+ARG VITE_ENABLE_SYNC=false
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_ENABLE_SYNC=$VITE_ENABLE_SYNC
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

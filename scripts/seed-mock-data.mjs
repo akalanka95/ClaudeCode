@@ -3,10 +3,11 @@
 // top-level node on the root board (cascades subtopics/edges/notes), then rebuilds from scratch.
 //
 // Usage: node scripts/seed-mock-data.mjs   (backend must be running on localhost:8080)
+// Or against a deployed backend: API_BASE=https://your-backend/api/v1 node scripts/seed-mock-data.mjs
 
 import { readFileSync } from "node:fs";
 
-const BASE = "http://localhost:8080/api/v1";
+const BASE = process.env.API_BASE ?? "http://localhost:8080/api/v1";
 
 async function api(method, path, body) {
   const res = await fetch(`${BASE}${path}`, {
