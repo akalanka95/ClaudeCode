@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { logout, useCurrentUser } from "../../hooks/useAuth";
+import { useCurrentUser } from "../../hooks/useAuth";
 import { getStoredToken } from "../../api/authToken";
 
 export function RequireAuth() {
@@ -15,15 +15,5 @@ export function RequireAuth() {
     return <Navigate to="/login" replace />;
   }
 
-  return (
-    <>
-      <button
-        onClick={logout}
-        className="fixed right-3 top-3 z-50 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm hover:bg-slate-50"
-      >
-        Log out
-      </button>
-      <Outlet />
-    </>
-  );
+  return <Outlet />;
 }

@@ -27,10 +27,29 @@ const COLOR_SWATCH_CLASSES: Record<string, string> = {
 const COLOR_ORDER = ["yellow", "pink", "blue", "green"];
 const MINIMIZED_HEIGHT = 36;
 const SAVE_DEBOUNCE_MS = 600;
+const VIEWPORT_MARGIN = 16;
+
+function clampToViewport(noteBlock: NoteBlockResponse) {
+  if (typeof window === "undefined") {
+    return {
+      position: { x: noteBlock.positionX, y: noteBlock.positionY },
+      size: { width: noteBlock.width, height: noteBlock.height },
+    };
+  }
+  const maxWidth = Math.max(160, window.innerWidth - VIEWPORT_MARGIN * 2);
+  const width = Math.min(noteBlock.width, maxWidth);
+  const maxX = Math.max(0, window.innerWidth - width - VIEWPORT_MARGIN);
+  const x = Math.min(Math.max(noteBlock.positionX, 0), maxX);
+  return {
+    position: { x, y: Math.max(0, noteBlock.positionY) },
+    size: { width, height: noteBlock.height },
+  };
+}
 
 export function NoteBlockCard({ noteBlock, onUpdate, onDelete, onBringToFront }: NoteBlockCardProps) {
-  const [position, setPosition] = useState({ x: noteBlock.positionX, y: noteBlock.positionY });
-  const [size, setSize] = useState({ width: noteBlock.width, height: noteBlock.height });
+  const initialLayout = clampToViewport(noteBlock);
+  const [position, setPosition] = useState(initialLayout.position);
+  const [size, setSize] = useState(initialLayout.size);
   const contentSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const colorClass = COLOR_CLASSES[noteBlock.color] ?? COLOR_CLASSES.yellow;

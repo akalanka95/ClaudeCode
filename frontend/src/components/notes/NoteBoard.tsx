@@ -45,7 +45,7 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
           />
           <button
             type="button"
-            className="rounded bg-slate-600 px-3 py-1.5 text-sm text-white hover:bg-slate-500 disabled:opacity-50"
+            className="rounded bg-slate-600 px-2.5 py-1 text-xs text-white hover:bg-slate-500 disabled:opacity-50"
             onClick={() => fileInputRef.current?.click()}
             disabled={isSummarizing}
           >
@@ -53,7 +53,7 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
           </button>
           <button
             type="button"
-            className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
+            className="rounded bg-slate-800 px-2.5 py-1 text-xs text-white hover:bg-slate-700"
             onClick={() => createNoteBlock.mutate({})}
           >
             + Add note
@@ -77,15 +77,17 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
           </p>
         </div>
       )}
-      {noteBlocks.map((noteBlock) => (
-        <NoteBlockCard
-          key={noteBlock.id}
-          noteBlock={noteBlock}
-          onUpdate={(id, request) => updateNoteBlock.mutate({ id, request })}
-          onDelete={(id) => deleteNoteBlock.mutate(id)}
-          onBringToFront={bringToFront}
-        />
-      ))}
+      <div className="isolate">
+        {noteBlocks.map((noteBlock) => (
+          <NoteBlockCard
+            key={noteBlock.id}
+            noteBlock={noteBlock}
+            onUpdate={(id, request) => updateNoteBlock.mutate({ id, request })}
+            onDelete={(id) => deleteNoteBlock.mutate(id)}
+            onBringToFront={bringToFront}
+          />
+        ))}
+      </div>
     </div>
   );
 }

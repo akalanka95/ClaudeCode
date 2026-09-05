@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useBoard } from "../hooks/useBoard";
 import { BoardCanvas } from "../components/board/BoardCanvas";
-import { Breadcrumbs } from "../components/board/Breadcrumbs";
+import { AppHeader } from "../components/common/AppHeader";
 import { ReferenceMaterialsPanel } from "../components/board/ReferenceMaterialsPanel";
+import { MockInterviewEntryPanel } from "../components/interview/MockInterviewEntryPanel";
 import { CollapsibleSidePanel } from "../components/common/CollapsibleSidePanel";
 
 export function BoardPage() {
@@ -18,11 +19,11 @@ export function BoardPage() {
     return <div className="p-4 text-red-600">Failed to load this board.</div>;
   }
 
+  const isHome = !board.parentNode;
+
   return (
     <div className="flex h-screen flex-col">
-      <header className="border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
-        <Breadcrumbs items={board.breadcrumb} />
-      </header>
+      <AppHeader breadcrumbItems={board.breadcrumb} showSearch showInterviewLink={isHome} />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1">
           <BoardCanvas key={board.boardId} board={board} />
@@ -39,6 +40,7 @@ export function BoardPage() {
             />
           </CollapsibleSidePanel>
         )}
+        {isHome && <MockInterviewEntryPanel />}
       </div>
     </div>
   );
