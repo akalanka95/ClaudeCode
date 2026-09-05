@@ -30,7 +30,7 @@ export function PromptModal({
       onClick={onCancel}
     >
       <div
-        className="w-80 rounded-lg bg-white p-4 shadow-lg"
+        className="w-[min(20rem,90vw)] rounded-lg bg-white p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-3 text-sm font-medium text-slate-800">{title}</h2>

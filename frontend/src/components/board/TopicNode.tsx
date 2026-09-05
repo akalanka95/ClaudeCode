@@ -69,12 +69,12 @@ export function TopicNode(props: NodeProps) {
               checked={data.completed}
               onChange={(e) => data.onToggleComplete(e.target.checked)}
               onClick={(e) => e.stopPropagation()}
-              className="h-4 w-4 shrink-0 cursor-pointer"
+              className="h-5 w-5 shrink-0 cursor-pointer"
               aria-label={data.completed ? "Mark subtopic incomplete" : "Mark subtopic complete"}
             />
           )}
           <div
-            className={`cursor-pointer text-sm font-medium text-slate-800 ${
+            className={`min-w-0 flex-1 cursor-pointer text-sm font-medium text-slate-800 ${
               data.isSubtopicBoard && data.completed ? "line-through text-slate-400" : ""
             }`}
             onDoubleClick={() => setEditing(true)}
@@ -82,6 +82,18 @@ export function TopicNode(props: NodeProps) {
           >
             {data.label}
           </div>
+          <button
+            type="button"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Rename"
+            title="Rename"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditing(true);
+            }}
+          >
+            ✎
+          </button>
         </div>
       )}
 

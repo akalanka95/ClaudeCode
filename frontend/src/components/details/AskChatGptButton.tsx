@@ -28,7 +28,7 @@ export function AskChatGptButton() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div className="fixed bottom-20 right-6 z-30 flex flex-col items-end gap-2 sm:bottom-6 sm:z-50">
       {blocked && (
         <div className="max-w-[220px] rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800 shadow">
           Your browser blocked the popup. Please allow popups for this site and try again.

@@ -34,8 +34,8 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
 
   return (
     <div className="relative h-full w-full overflow-auto bg-slate-50">
-      <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-1.5">
-        <div className="flex gap-2">
+      <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-1.5">
+        <div className="flex flex-wrap justify-end gap-2">
           <input
             ref={fileInputRef}
             type="file"

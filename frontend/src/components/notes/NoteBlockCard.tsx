@@ -25,7 +25,7 @@ const COLOR_SWATCH_CLASSES: Record<string, string> = {
 };
 
 const COLOR_ORDER = ["yellow", "pink", "blue", "green"];
-const MINIMIZED_HEIGHT = 28;
+const MINIMIZED_HEIGHT = 36;
 const SAVE_DEBOUNCE_MS = 600;
 
 export function NoteBlockCard({ noteBlock, onUpdate, onDelete, onBringToFront }: NoteBlockCardProps) {
@@ -77,18 +77,23 @@ export function NoteBlockCard({ noteBlock, onUpdate, onDelete, onBringToFront }:
       bounds="parent"
       className={`flex flex-col overflow-hidden rounded border shadow-sm ${colorClass}`}
     >
-      <div className="note-drag-handle flex cursor-move items-center justify-between gap-1 border-b border-black/10 px-1.5 py-1">
+      <div className="note-drag-handle flex min-h-9 cursor-move items-center justify-between gap-1 border-b border-black/10 px-1 py-1">
         <button
           type="button"
           title="Change color"
-          className={`h-2.5 w-2.5 shrink-0 rounded-full border border-black/20 ${COLOR_SWATCH_CLASSES[noteBlock.color] ?? COLOR_SWATCH_CLASSES.yellow}`}
+          aria-label="Change color"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full hover:bg-black/10"
           onClick={cycleColor}
-        />
-        <div className="flex items-center gap-1">
+        >
+          <span
+            className={`h-2.5 w-2.5 rounded-full border border-black/20 ${COLOR_SWATCH_CLASSES[noteBlock.color] ?? COLOR_SWATCH_CLASSES.yellow}`}
+          />
+        </button>
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             title={noteBlock.minimized ? "Maximize" : "Minimize"}
-            className="rounded px-1 text-[9px] leading-none hover:bg-black/10"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs leading-none hover:bg-black/10"
             onClick={() => onUpdate(noteBlock.id, { minimized: !noteBlock.minimized })}
           >
             {noteBlock.minimized ? "□" : "–"}
@@ -96,7 +101,7 @@ export function NoteBlockCard({ noteBlock, onUpdate, onDelete, onBringToFront }:
           <button
             type="button"
             title="Delete note"
-            className="rounded px-1 text-[9px] leading-none hover:bg-black/10"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs leading-none hover:bg-black/10"
             onClick={() => onDelete(noteBlock.id)}
           >
             &times;

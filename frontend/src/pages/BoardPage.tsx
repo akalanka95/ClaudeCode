@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useBoard } from "../hooks/useBoard";
 import { BoardCanvas } from "../components/board/BoardCanvas";
 import { Breadcrumbs } from "../components/board/Breadcrumbs";
 import { ReferenceMaterialsPanel } from "../components/board/ReferenceMaterialsPanel";
+import { CollapsibleSidePanel } from "../components/common/CollapsibleSidePanel";
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();
   const { data: board, isLoading, isError } = useBoard(boardId);
+  const [referencePanelOpen, setReferencePanelOpen] = useState(false);
 
   if (isLoading) {
     return <div className="p-4 text-slate-500">Loading...</div>;
@@ -25,10 +28,16 @@ export function BoardPage() {
           <BoardCanvas key={board.boardId} board={board} />
         </div>
         {board.parentNode && (
-          <ReferenceMaterialsPanel
-            nodeId={board.parentNode.id}
-            description={`Research links for "${board.parentNode.label ?? "this topic"}" — kept here for later reuse.`}
-          />
+          <CollapsibleSidePanel
+            label="Reference materials"
+            open={referencePanelOpen}
+            onOpenChange={setReferencePanelOpen}
+          >
+            <ReferenceMaterialsPanel
+              nodeId={board.parentNode.id}
+              description={`Research links for "${board.parentNode.label ?? "this topic"}" — kept here for later reuse.`}
+            />
+          </CollapsibleSidePanel>
         )}
       </div>
     </div>
