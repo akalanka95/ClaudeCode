@@ -3,9 +3,11 @@ package com.interviewprep.backend.node;
 import com.interviewprep.backend.node.dto.BulkPositionUpdateRequest;
 import com.interviewprep.backend.node.dto.CreateNodeRequest;
 import com.interviewprep.backend.node.dto.NodeResponse;
+import com.interviewprep.backend.node.dto.TopicOptionResponse;
 import com.interviewprep.backend.node.dto.UpdateDetailsRequest;
 import com.interviewprep.backend.node.dto.UpdateNodeRequest;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,11 @@ public class NodeController {
 
     private final NodeService nodeService;
     private final NodeMapper nodeMapper;
+
+    @GetMapping("/api/v1/nodes/topics")
+    public List<TopicOptionResponse> listTopics() {
+        return nodeService.listAllTopics();
+    }
 
     @GetMapping("/api/v1/nodes/{nodeId}")
     public NodeResponse getNode(@PathVariable UUID nodeId) {

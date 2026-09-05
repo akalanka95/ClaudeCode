@@ -3,12 +3,18 @@ import type {
   CreateNodeRequest,
   NodeResponse,
   PositionUpdate,
+  TopicOptionResponse,
   UpdateDetailsRequest,
   UpdateNodeRequest,
 } from "../types/api";
 
 export async function getNode(nodeId: string): Promise<NodeResponse> {
   const { data } = await apiClient.get<NodeResponse>(`/nodes/${nodeId}`);
+  return data;
+}
+
+export async function listTopics(): Promise<TopicOptionResponse[]> {
+  const { data } = await apiClient.get<TopicOptionResponse[]>("/nodes/topics");
   return data;
 }
 

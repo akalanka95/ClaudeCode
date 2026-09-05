@@ -4,6 +4,8 @@ import { HomeRedirect } from "./pages/HomeRedirect";
 import { BoardPage } from "./pages/BoardPage";
 import { DetailsPage } from "./pages/DetailsPage";
 import { SubTopicPage } from "./pages/SubTopicPage";
+import { InterviewSetupPage } from "./pages/InterviewSetupPage";
+import { InterviewSessionPage } from "./pages/InterviewSessionPage";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +18,8 @@ export function App() {
           <Route path="/board/:boardId" element={<BoardPage />} />
           <Route path="/node/:nodeId/details" element={<DetailsPage />} />
           <Route path="/node/:nodeId/subtopic" element={<SubTopicPage />} />
+          <Route path="/interview" element={<InterviewSetupPage />} />
+          <Route path="/interview/:sessionId" element={<InterviewSessionPage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
