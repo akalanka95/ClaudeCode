@@ -3,6 +3,7 @@ import { AnswerInput } from "../components/interview/AnswerInput";
 import { FeedbackPanel } from "../components/interview/FeedbackPanel";
 import { QuestionCard } from "../components/interview/QuestionCard";
 import { useInterviewSession } from "../hooks/useInterview";
+import { AppHeader } from "../components/common/AppHeader";
 
 export function InterviewSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -33,55 +34,58 @@ export function InterviewSessionPage() {
   const isAnswering = phase === "idle" && currentTurn?.status === "PENDING_ANSWER";
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-4">
-      <button
-        className="flex min-h-11 items-center self-start text-sm text-blue-600 hover:underline"
-        onClick={() => navigate("/interview")}
-      >
-        &larr; Back to setup
-      </button>
+    <div className="flex min-h-screen flex-col">
+      <AppHeader />
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-4">
+        <button
+          className="flex min-h-11 items-center self-start text-sm text-blue-600 hover:underline"
+          onClick={() => navigate("/interview")}
+        >
+          &larr; Back to setup
+        </button>
 
-      <h1 className="text-xl font-semibold text-slate-800">
-        Mock Interview — {session.topics.map((t) => t.label ?? "Untitled").join(", ")}
-      </h1>
+        <h1 className="text-xl font-semibold text-slate-800">
+          Mock Interview — {session.topics.map((t) => t.label ?? "Untitled").join(", ")}
+        </h1>
 
-      {error && <div className="text-sm text-red-600">{error}</div>}
+        {error && <div className="text-sm text-red-600">{error}</div>}
 
-      {session.status === "COMPLETED" ? (
-        <div className="rounded border border-emerald-200 bg-emerald-50 p-4">
-          <div className="text-sm font-semibold text-emerald-700">Session complete</div>
-          <div className="mt-1 text-2xl font-bold text-emerald-900">
-            {session.overallScore !== null ? `${session.overallScore.toFixed(1)}/10` : "—"}
+        {session.status === "COMPLETED" ? (
+          <div className="rounded border border-emerald-200 bg-emerald-50 p-4">
+            <div className="text-sm font-semibold text-emerald-700">Session complete</div>
+            <div className="mt-1 text-2xl font-bold text-emerald-900">
+              {session.overallScore !== null ? `${session.overallScore.toFixed(1)}/10` : "—"}
+            </div>
           </div>
-        </div>
-      ) : isGeneratingNextQuestion ? (
-        <QuestionCard
-          turnIndex={(currentTurn?.turnIndex ?? -1) + 1}
-          totalQuestions={session.totalQuestions}
-          question={questionText}
-          isStreaming
-        />
-      ) : (
-        currentTurn && (
+        ) : isGeneratingNextQuestion ? (
           <QuestionCard
-            turnIndex={currentTurn.turnIndex}
+            turnIndex={(currentTurn?.turnIndex ?? -1) + 1}
             totalQuestions={session.totalQuestions}
-            question={currentTurn.question}
-            isStreaming={false}
+            question={questionText}
+            isStreaming
           />
-        )
-      )}
+        ) : (
+          currentTurn && (
+            <QuestionCard
+              turnIndex={currentTurn.turnIndex}
+              totalQuestions={session.totalQuestions}
+              question={currentTurn.question}
+              isStreaming={false}
+            />
+          )
+        )}
 
-      {isAnswering && <AnswerInput disabled={submitting} submitting={submitting} onSubmit={submitAnswer} />}
+        {isAnswering && <AnswerInput disabled={submitting} submitting={submitting} onSubmit={submitAnswer} />}
 
-      {reviewingTurn && (
-        <FeedbackPanel
-          phase={phase}
-          score={reviewingTurn.score}
-          gradingText={gradingText || reviewingTurn.graderFeedback || ""}
-          coachingText={coachingText || reviewingTurn.coachFeedback || ""}
-        />
-      )}
+        {reviewingTurn && (
+          <FeedbackPanel
+            phase={phase}
+            score={reviewingTurn.score}
+            gradingText={gradingText || reviewingTurn.graderFeedback || ""}
+            coachingText={coachingText || reviewingTurn.coachFeedback || ""}
+          />
+        )}
+      </div>
     </div>
   );
 }

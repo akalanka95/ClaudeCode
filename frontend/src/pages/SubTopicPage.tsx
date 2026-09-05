@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { getNode } from "../api/nodes";
 import type { NodeResponse } from "../types/api";
 import { useBoard } from "../hooks/useBoard";
-import { Breadcrumbs } from "../components/board/Breadcrumbs";
+import { AppHeader } from "../components/common/AppHeader";
 import { SyncReferenceSidebar } from "../components/board/SyncReferenceSidebar";
 import { NoteBoard } from "../components/notes/NoteBoard";
 import { AskChatGptButton } from "../components/details/AskChatGptButton";
@@ -50,9 +50,7 @@ export function SubTopicPage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
-        {breadcrumbItems.length > 0 && <Breadcrumbs items={breadcrumbItems} />}
-      </header>
+      <AppHeader breadcrumbItems={breadcrumbItems} showSearch />
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-hidden">
           <NoteBoard nodeId={nodeId} />

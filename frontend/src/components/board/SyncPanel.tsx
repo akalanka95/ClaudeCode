@@ -17,7 +17,7 @@ export function SyncPanel({ nodeId }: SyncPanelProps) {
   const { historyQuery, activeRunQuery, triggerSync, isSyncing } = useSubtopicSync(nodeId);
 
   return (
-    <aside className="flex min-h-0 w-full shrink-0 flex-1 flex-col gap-3 overflow-y-auto border-l border-slate-200 p-4 sm:w-80">
+    <aside className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-y-auto border-l border-slate-200 p-4 sm:w-80">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-800">Sync</h2>
         <button

@@ -68,19 +68,20 @@ export function SearchBar() {
 
   return (
     <>
-      {/* Mobile (<sm): a tappable icon that expands into a full-width overlay, so the input
-          never has to compete with the logo/breadcrumbs for a sliver of header width. */}
+      {/* Mobile (<sm): a tappable icon that expands into a full-width overlay anchored to the
+          header's own bottom edge, so the input never has to compete with the logo/breadcrumbs
+          for a sliver of header width, and never overlays the header itself. */}
       <button
         type="button"
         onClick={() => setMobileExpanded(true)}
         aria-label="Search"
-        className="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-slate-500 hover:bg-slate-50 sm:hidden"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-slate-500 hover:bg-slate-50 sm:hidden"
       >
         <span aria-hidden>⌕</span>
       </button>
 
       {mobileExpanded && (
-        <div className="fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white shadow-sm sm:hidden">
+        <div className="absolute inset-x-0 top-full z-20 border-b border-slate-200 bg-white shadow-sm sm:hidden">
           <div className="relative flex items-center gap-2 p-2">
             <input
               autoFocus
@@ -115,7 +116,7 @@ export function SearchBar() {
       )}
 
       {/* Desktop (sm+): always-visible inline search, unchanged from before. */}
-      <div className="relative ml-auto hidden w-full max-w-xs sm:block">
+      <div className="relative hidden w-full max-w-xs sm:block">
         <input
           type="search"
           value={query}
