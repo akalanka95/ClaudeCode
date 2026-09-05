@@ -26,17 +26,18 @@ public class BoardService {
     private final EdgeRepository edgeRepository;
     private final NodeMapper nodeMapper;
 
-    public UUID getRootBoardId() {
+    public UUID getRootBoardId(UUID ownerId) {
         return boardRepository
-                .findByParentNodeIdIsNull()
-                .orElseThrow(() -> new IllegalStateException("Root board not seeded"))
+                .findByParentNodeIdIsNullAndOwnerId(ownerId)
+                .orElseThrow(() -> new IllegalStateException("Root board not seeded for user " + ownerId))
                 .getId();
     }
 
     @Transactional(readOnly = true)
-    public BoardResponse getBoard(UUID boardId) {
+    public BoardResponse getBoard(UUID boardId, UUID ownerId) {
         Board board = boardRepository
                 .findById(boardId)
+                .filter(b -> b.getOwnerId().equals(ownerId))
                 .orElseThrow(() -> new NotFoundException("Board not found: " + boardId));
 
         ParentNodeInfo parentNodeInfo = null;

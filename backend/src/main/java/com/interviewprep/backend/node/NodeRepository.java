@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface NodeRepository extends JpaRepository<Node, UUID> {
     List<Node> findByBoardId(UUID boardId);
 
+    List<Node> findByBoardIdIn(List<UUID> boardIds);
+
     int countByBoardIdAndType(UUID boardId, NodeType type);
 
     int countByBoardIdAndTypeAndCompletedTrue(UUID boardId, NodeType type);

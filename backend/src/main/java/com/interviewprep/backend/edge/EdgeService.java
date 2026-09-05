@@ -1,5 +1,6 @@
 package com.interviewprep.backend.edge;
 
+import com.interviewprep.backend.auth.OwnershipGuard;
 import com.interviewprep.backend.board.Board;
 import com.interviewprep.backend.board.BoardRepository;
 import com.interviewprep.backend.common.ConflictException;
@@ -19,11 +20,13 @@ public class EdgeService {
     private final EdgeRepository edgeRepository;
     private final NodeRepository nodeRepository;
     private final BoardRepository boardRepository;
+    private final OwnershipGuard ownershipGuard;
 
     @Transactional
-    public Edge createEdge(UUID boardId, CreateEdgeRequest request) {
+    public Edge createEdge(UUID boardId, CreateEdgeRequest request, UUID ownerId) {
         Board board = boardRepository
                 .findById(boardId)
+                .filter(b -> b.getOwnerId().equals(ownerId))
                 .orElseThrow(() -> new NotFoundException("Board not found: " + boardId));
         Node source = nodeRepository
                 .findById(request.sourceNodeId())
@@ -61,8 +64,8 @@ public class EdgeService {
     }
 
     @Transactional
-    public void deleteEdge(UUID edgeId) {
-        if (!edgeRepository.existsById(edgeId)) {
+    public void deleteEdge(UUID edgeId, UUID ownerId) {
+        if (!ownershipGuard.isEdgeOwnedBy(edgeId, ownerId)) {
             throw new NotFoundException("Edge not found: " + edgeId);
         }
         edgeRepository.deleteById(edgeId);

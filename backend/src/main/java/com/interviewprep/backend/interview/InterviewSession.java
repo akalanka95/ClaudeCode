@@ -31,6 +31,9 @@ public class InterviewSession {
     @GeneratedValue
     private UUID id;
 
+    @Column(name = "owner_id", nullable = false)
+    private UUID ownerId;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "topics", columnDefinition = "jsonb", nullable = false)
     private List<InterviewTopicSnapshot> topics;

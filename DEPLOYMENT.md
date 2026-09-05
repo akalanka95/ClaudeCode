@@ -42,6 +42,13 @@ if `ANTHROPIC_API_KEY`/`VOYAGE_API_KEY` are set in your shell before running the
    - `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` = from step 2
    - `APP_CORS_ALLOWED_ORIGIN` = the frontend URL from step 5 below (you can come back and set
      this once you have it)
+   - `APP_JWT_SECRET` = a long random string (e.g. `openssl rand -base64 48`)
+   - `APP_OAUTH_FRONTEND_REDIRECT_BASE_URL` = the frontend URL from step 5 below — this is where
+     the browser lands (with its token) after a Google login completes
+   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` = from a Google Cloud Console OAuth client
+     (type "Web application") with authorized redirect URI
+     `https://<your-backend>.onrender.com/login/oauth2/code/google`. The `admin`/`skill_loop`
+     login works even if these are left unset — only Google sign-in needs them.
    - Render injects `PORT` automatically; `application.yml` already reads it.
    - Leave `ANTHROPIC_API_KEY`/`VOYAGE_API_KEY`/`APP_QDRANT_HOST` unset unless you're turning on
      semantic search publicly (see the caveat above) — the backend boots fine without them, that
@@ -81,3 +88,7 @@ It talks to the real REST API, so it works against a deployed backend exactly li
   take 20-30s to wake back up. Fine for a CV demo link, just don't be surprised by it live.
 - Update `APP_CORS_ALLOWED_ORIGIN` any time the frontend's deployed URL changes, or API requests
   will fail with CORS errors in the browser console.
+- Same for `APP_OAUTH_FRONTEND_REDIRECT_BASE_URL` and the Google OAuth client's authorized
+  redirect URI (`https://<backend>/login/oauth2/code/google`) — both are tied to the backend's
+  own URL, not the frontend's, so they only need updating if the *backend's* deployed URL
+  changes.

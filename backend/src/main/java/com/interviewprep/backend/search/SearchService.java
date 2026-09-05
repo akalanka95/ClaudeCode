@@ -1,5 +1,7 @@
 package com.interviewprep.backend.search;
 
+import com.interviewprep.backend.board.Board;
+import com.interviewprep.backend.board.BoardRepository;
 import com.interviewprep.backend.node.Node;
 import com.interviewprep.backend.node.NodeRepository;
 import com.interviewprep.backend.node.NodeType;
@@ -13,6 +15,8 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
+import dev.langchain4j.store.embedding.filter.Filter;
+import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +51,7 @@ public class SearchService {
     private final EmbeddingStore<TextSegment> embeddingStore;
     private final NodeRepository nodeRepository;
     private final NoteBlockRepository noteBlockRepository;
+    private final BoardRepository boardRepository;
 
     // Explicit constructor (not Lombok's @RequiredArgsConstructor) so @Lazy can be placed on the
     // two AI client params: SearchService itself is eagerly created (NodeService depends on it),
@@ -56,11 +61,13 @@ public class SearchService {
             @Lazy EmbeddingModel embeddingModel,
             @Lazy EmbeddingStore<TextSegment> embeddingStore,
             NodeRepository nodeRepository,
-            NoteBlockRepository noteBlockRepository) {
+            NoteBlockRepository noteBlockRepository,
+            BoardRepository boardRepository) {
         this.embeddingModel = embeddingModel;
         this.embeddingStore = embeddingStore;
         this.nodeRepository = nodeRepository;
         this.noteBlockRepository = noteBlockRepository;
+        this.boardRepository = boardRepository;
     }
 
     @Async("searchIndexExecutor")
@@ -92,7 +99,7 @@ public class SearchService {
     }
 
     @Transactional(readOnly = true)
-    public List<SearchResultResponse> search(String query, int limit) {
+    public List<SearchResultResponse> search(String query, int limit, UUID ownerId) {
         if (query == null || query.isBlank()) {
             return List.of();
         }
@@ -107,6 +114,7 @@ public class SearchService {
                         // up with `limit` real results.
                         .maxResults(Math.max(limit * 4, 20))
                         .minScore(MIN_SCORE)
+                        .filter(ownerFilter(ownerId))
                         .build();
 
         List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(request).matches();
@@ -134,7 +142,11 @@ public class SearchService {
             embeddingStore.remove(node.getId().toString());
             return;
         }
-        upsert(node.getId(), node.getId(), KIND_NODE, text);
+        UUID ownerId = ownerIdForBoard(node.getBoardId());
+        if (ownerId == null) {
+            return;
+        }
+        upsert(node.getId(), node.getId(), KIND_NODE, text, ownerId);
     }
 
     private void indexNoteBlockInternal(NoteBlock noteBlock) {
@@ -144,14 +156,30 @@ public class SearchService {
             embeddingStore.remove(noteBlock.getId().toString());
             return;
         }
-        upsert(noteBlock.getId(), noteBlock.getNodeId(), KIND_NOTE_BLOCK, text);
+        UUID ownerId = nodeRepository
+                .findById(noteBlock.getNodeId())
+                .map(n -> ownerIdForBoard(n.getBoardId()))
+                .orElse(null);
+        if (ownerId == null) {
+            return;
+        }
+        upsert(noteBlock.getId(), noteBlock.getNodeId(), KIND_NOTE_BLOCK, text, ownerId);
     }
 
-    private void upsert(UUID pointId, UUID ownerNodeId, String kind, String text) {
-        Metadata metadata = new Metadata().put("nodeId", ownerNodeId).put("kind", kind);
+    private UUID ownerIdForBoard(UUID boardId) {
+        return boardRepository.findById(boardId).map(Board::getOwnerId).orElse(null);
+    }
+
+    private void upsert(UUID pointId, UUID ownerNodeId, String kind, String text, UUID ownerId) {
+        Metadata metadata =
+                new Metadata().put("nodeId", ownerNodeId).put("kind", kind).put("userId", ownerId);
         TextSegment segment = TextSegment.from(text, metadata);
         Embedding embedding = embeddingModel.embed(segment).content();
         embeddingStore.addAll(List.of(pointId.toString()), List.of(embedding), List.of(segment));
+    }
+
+    private static Filter ownerFilter(UUID ownerId) {
+        return metadataKey("userId").isEqualTo(ownerId.toString());
     }
 
     private SearchResultResponse toResult(UUID nodeId, double score) {

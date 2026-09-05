@@ -1,7 +1,7 @@
 package com.interviewprep.backend.noteblock;
 
+import com.interviewprep.backend.auth.OwnershipGuard;
 import com.interviewprep.backend.common.NotFoundException;
-import com.interviewprep.backend.node.NodeRepository;
 import com.interviewprep.backend.noteblock.dto.CreateNoteBlockRequest;
 import com.interviewprep.backend.noteblock.dto.UpdateNoteBlockRequest;
 import com.interviewprep.backend.search.SearchService;
@@ -20,18 +20,18 @@ public class NoteBlockService {
     private static final String DEFAULT_COLOR = "yellow";
 
     private final NoteBlockRepository noteBlockRepository;
-    private final NodeRepository nodeRepository;
+    private final OwnershipGuard ownershipGuard;
     private final SearchService searchService;
 
     @Transactional(readOnly = true)
-    public List<NoteBlock> list(UUID nodeId) {
-        requireNode(nodeId);
+    public List<NoteBlock> list(UUID nodeId, UUID ownerId) {
+        requireNode(nodeId, ownerId);
         return noteBlockRepository.findByNodeIdOrderByCreatedAtAsc(nodeId);
     }
 
     @Transactional
-    public NoteBlock create(UUID nodeId, CreateNoteBlockRequest request) {
-        requireNode(nodeId);
+    public NoteBlock create(UUID nodeId, CreateNoteBlockRequest request, UUID ownerId) {
+        requireNode(nodeId, ownerId);
         List<NoteBlock> existing = noteBlockRepository.findByNodeIdOrderByCreatedAtAsc(nodeId);
 
         NoteBlock noteBlock = new NoteBlock();
@@ -50,9 +50,10 @@ public class NoteBlockService {
     }
 
     @Transactional
-    public NoteBlock update(UUID noteBlockId, UpdateNoteBlockRequest request) {
+    public NoteBlock update(UUID noteBlockId, UpdateNoteBlockRequest request, UUID ownerId) {
         NoteBlock noteBlock = noteBlockRepository
                 .findById(noteBlockId)
+                .filter(nb -> ownershipGuard.isNodeOwnedBy(nb.getNodeId(), ownerId))
                 .orElseThrow(() -> new NotFoundException("Note block not found: " + noteBlockId));
 
         if (request.content() != null) {
@@ -88,16 +89,17 @@ public class NoteBlockService {
     }
 
     @Transactional
-    public void delete(UUID noteBlockId) {
-        if (!noteBlockRepository.existsById(noteBlockId)) {
-            throw new NotFoundException("Note block not found: " + noteBlockId);
-        }
-        noteBlockRepository.deleteById(noteBlockId);
+    public void delete(UUID noteBlockId, UUID ownerId) {
+        NoteBlock noteBlock = noteBlockRepository
+                .findById(noteBlockId)
+                .filter(nb -> ownershipGuard.isNodeOwnedBy(nb.getNodeId(), ownerId))
+                .orElseThrow(() -> new NotFoundException("Note block not found: " + noteBlockId));
+        noteBlockRepository.deleteById(noteBlock.getId());
         searchService.removeNoteBlockFromIndex(noteBlockId);
     }
 
-    private void requireNode(UUID nodeId) {
-        if (!nodeRepository.existsById(nodeId)) {
+    private void requireNode(UUID nodeId, UUID ownerId) {
+        if (!ownershipGuard.isNodeOwnedBy(nodeId, ownerId)) {
             throw new NotFoundException("Node not found: " + nodeId);
         }
     }

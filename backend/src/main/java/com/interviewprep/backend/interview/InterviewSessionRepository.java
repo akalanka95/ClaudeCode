@@ -5,5 +5,5 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InterviewSessionRepository extends JpaRepository<InterviewSession, UUID> {
-    List<InterviewSession> findAllByOrderByCreatedAtDesc();
+    List<InterviewSession> findAllByOwnerIdOrderByCreatedAtDesc(UUID ownerId);
 }
