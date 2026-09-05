@@ -13,7 +13,7 @@ export function SyncReferenceSidebar({ nodeId }: SyncReferenceSidebarProps) {
     return (
       <button
         type="button"
-        className="flex shrink-0 items-center gap-1 border-l border-slate-200 px-2 text-sm text-slate-600 hover:bg-slate-50"
+        className="flex min-h-11 shrink-0 items-center gap-1 border-l border-slate-200 px-2 text-sm text-slate-600 hover:bg-slate-50"
         onClick={() => setOpen(true)}
       >
         <span className="[writing-mode:vertical-rl]">Sync &amp; reference materials</span>
@@ -23,16 +23,16 @@ export function SyncReferenceSidebar({ nodeId }: SyncReferenceSidebarProps) {
   }
 
   return (
-    <div className="flex h-full shrink-0 flex-col border-l border-slate-200">
+    <div className="fixed inset-0 z-40 flex flex-col bg-white sm:static sm:z-auto sm:h-full sm:w-auto sm:shrink-0 sm:border-l sm:border-slate-200">
       <button
         type="button"
-        className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className="flex min-h-11 items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         onClick={() => setOpen(false)}
       >
         Sync &amp; reference materials
         <span aria-hidden>›</span>
       </button>
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
         <SyncPanel nodeId={nodeId} />
         <ReferenceMaterialsPanel nodeId={nodeId} />
       </div>

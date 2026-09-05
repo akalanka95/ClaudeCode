@@ -296,7 +296,7 @@ function BoardCanvasInner({ board }: BoardCanvasProps) {
       >
         <Background />
         <Controls />
-        <MiniMap />
+        <MiniMap className="hidden sm:block" />
       </ReactFlow>
       {showTopicPrompt && (
         <PromptModal

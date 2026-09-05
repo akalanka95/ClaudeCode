@@ -55,7 +55,10 @@ export function DetailsPage() {
 
   return (
     <div className="mx-auto flex h-screen max-w-3xl flex-col gap-3 p-4">
-      <button className="self-start text-sm text-blue-600 hover:underline" onClick={() => navigate(-1)}>
+      <button
+        className="flex min-h-11 items-center self-start text-sm text-blue-600 hover:underline"
+        onClick={() => navigate(-1)}
+      >
         &larr; Back to board
       </button>
       <h1 className="text-xl font-semibold text-slate-800">{node?.label ?? "Details"}</h1>
@@ -67,7 +70,7 @@ export function DetailsPage() {
       />
       <div className="flex items-center gap-3">
         <button
-          className="rounded bg-slate-800 px-4 py-1.5 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
+          className="min-h-11 rounded bg-slate-800 px-4 py-1.5 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
           onClick={handleSave}
           disabled={saving}
         >

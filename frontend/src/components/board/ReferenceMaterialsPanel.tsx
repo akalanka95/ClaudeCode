@@ -32,7 +32,7 @@ export function ReferenceMaterialsPanel({
   }
 
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col gap-3 border-l border-slate-200 p-4">
+    <aside className="flex min-h-0 w-full shrink-0 flex-1 flex-col gap-3 overflow-y-auto border-l border-slate-200 p-4 sm:w-80">
       <h2 className="text-sm font-semibold text-slate-800">Reference Materials</h2>
       <p className="text-xs text-slate-500">{description}</p>
 
