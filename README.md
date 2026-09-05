@@ -42,8 +42,22 @@ and either Docker or a local PostgreSQL instance.
    Semantic search is optional, like `sync-agent` below: the rest of the app works without it,
    and it stays inert until you set `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY` (metered keys, not
    the Claude Code subscription `sync-agent` uses) — without them, search requests fail rather
-   than blocking startup. Once set, backfill the index once with
-   `curl -X POST http://localhost:8080/api/v1/search/reindex`.
+   than blocking startup.
+
+   **Never put real keys in `application.yml`** — it's committed to git. Put them in
+   `backend/.env` instead (gitignored, one `KEY=value` per line — see
+   `backend/.env.example`), then export it into your shell before running `spring-boot:run`
+   (Spring Boot doesn't read `.env` files on its own):
+   ```
+   export $(grep -v '^#' backend/.env | xargs)
+   ./mvnw spring-boot:run
+   ```
+   Once set, backfill the index once with
+   `curl -X POST http://localhost:8080/api/v1/search/reindex`. If you're on Voyage AI's free
+   tier without a payment method on file, its rate limit is a very low 3 requests/minute — a
+   bulk reindex of more than a couple of nodes will hit `429`s partway through. Add a payment
+   method at the [Voyage dashboard](https://dashboard.voyageai.com/) (free tokens still apply)
+   before relying on this for anything beyond a quick smoke test.
 
 3. **sync-agent** (from `sync-agent/`) — powers the subtopic Sync button; the rest of the app
    works without it, but Sync requests will fail until it's running.
