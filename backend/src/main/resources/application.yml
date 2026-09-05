@@ -21,6 +21,15 @@ app:
     allowed-origin: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
   sync-agent:
     base-url: ${APP_SYNC_AGENT_BASE_URL:http://127.0.0.1:4100}
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:}
+  voyage:
+    api-key: ${VOYAGE_API_KEY:}
+  qdrant:
+    host: ${APP_QDRANT_HOST:localhost}
+    grpc-port: ${APP_QDRANT_GRPC_PORT:6334}
+    use-tls: ${APP_QDRANT_USE_TLS:false}
+    api-key: ${APP_QDRANT_API_KEY:}
 
 server:
   port: ${PORT:8080}

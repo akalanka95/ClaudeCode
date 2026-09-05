@@ -15,19 +15,33 @@ services:
       timeout: 5s
       retries: 10
 
+  qdrant:
+    image: qdrant/qdrant:v1.13.6
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrantdata:/qdrant/storage
+
   backend:
     build: ./backend
+    env_file:
+      - ./backend/.env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/interviewprep
       SPRING_DATASOURCE_USERNAME: interviewprep
       SPRING_DATASOURCE_PASSWORD: interviewprep
       APP_CORS_ALLOWED_ORIGIN: http://localhost:5173
+      APP_QDRANT_HOST: qdrant
+      APP_QDRANT_GRPC_PORT: 6334
       PORT: 8080
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      qdrant:
+        condition: service_started
 
   frontend:
     build:
@@ -42,3 +56,4 @@ services:
 
 volumes:
   pgdata:
+  qdrantdata:

@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 import type { BreadcrumbItem } from "../../types/api";
+import { SearchBar } from "../search/SearchBar";
+
+const SEARCH_ENABLED = import.meta.env.VITE_ENABLE_SEARCH !== "false";
 
 interface BreadcrumbsProps {
   items: BreadcrumbItem[];
@@ -39,6 +42,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
           </span>
         ))}
       </div>
+      {SEARCH_ENABLED && <SearchBar />}
     </nav>
   );
 }

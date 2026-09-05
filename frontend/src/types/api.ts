@@ -164,3 +164,16 @@ export interface UpdateNoteBlockRequest {
   minimized?: boolean;
   zIndex?: number;
 }
+
+export interface SearchResultResponse {
+  nodeId: string;
+  type: NodeType;
+  label: string | null;
+  boardId: string;
+  snippet: string;
+  score: number;
+}
+
+export interface SearchResponse {
+  results: SearchResultResponse[];
+}
