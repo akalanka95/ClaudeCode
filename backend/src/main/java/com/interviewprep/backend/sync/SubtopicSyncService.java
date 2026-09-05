@@ -1,7 +1,7 @@
 package com.interviewprep.backend.sync;
 
+import com.interviewprep.backend.auth.OwnershipGuard;
 import com.interviewprep.backend.common.NotFoundException;
-import com.interviewprep.backend.node.NodeRepository;
 import com.interviewprep.backend.sync.dto.SyncRunResponse;
 import java.util.List;
 import java.util.UUID;
@@ -14,11 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class SubtopicSyncService {
 
     private final SubtopicSyncRunRepository syncRunRepository;
-    private final NodeRepository nodeRepository;
+    private final OwnershipGuard ownershipGuard;
     private final SubtopicSyncRunner syncRunner;
 
-    public SubtopicSyncRun triggerSync(UUID nodeId) {
-        if (!nodeRepository.existsById(nodeId)) {
+    public SubtopicSyncRun triggerSync(UUID nodeId, UUID ownerId) {
+        if (!ownershipGuard.isNodeOwnedBy(nodeId, ownerId)) {
             throw new NotFoundException("Node not found: " + nodeId);
         }
 
@@ -36,7 +36,10 @@ public class SubtopicSyncService {
     }
 
     @Transactional(readOnly = true)
-    public SubtopicSyncRun getRun(UUID nodeId, UUID runId) {
+    public SubtopicSyncRun getRun(UUID nodeId, UUID runId, UUID ownerId) {
+        if (!ownershipGuard.isNodeOwnedBy(nodeId, ownerId)) {
+            throw new NotFoundException("Sync run not found: " + runId);
+        }
         SubtopicSyncRun run = syncRunRepository
                 .findById(runId)
                 .orElseThrow(() -> new NotFoundException("Sync run not found: " + runId));
@@ -47,8 +50,8 @@ public class SubtopicSyncService {
     }
 
     @Transactional(readOnly = true)
-    public List<SubtopicSyncRun> getHistory(UUID nodeId) {
-        if (!nodeRepository.existsById(nodeId)) {
+    public List<SubtopicSyncRun> getHistory(UUID nodeId, UUID ownerId) {
+        if (!ownershipGuard.isNodeOwnedBy(nodeId, ownerId)) {
             throw new NotFoundException("Node not found: " + nodeId);
         }
         return syncRunRepository.findByNodeIdOrderByCreatedAtDesc(nodeId);

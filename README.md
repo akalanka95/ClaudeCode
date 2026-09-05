@@ -32,7 +32,20 @@ and either Docker or a local PostgreSQL instance.
    `backend/src/main/resources/application.yml`, and point `APP_QDRANT_HOST`/
    `APP_QDRANT_GRPC_PORT` at your own Qdrant instance.
 
-2. **Backend** (from `backend/`)
+2. **Auth**: the app requires signing in. There's one hardcoded local account
+   (`admin` / `skill_loop`); anyone else signs in with Google. Put these in `backend/.env`
+   (see `backend/.env.example`):
+   ```
+   APP_JWT_SECRET=<any long random string>
+   GOOGLE_CLIENT_ID=<from Google Cloud Console>
+   GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+   ```
+   To get a Google Client ID/Secret: Google Cloud Console > APIs & Services > Credentials >
+   Create Credentials > OAuth client ID (type "Web application"), with authorized redirect URI
+   `http://localhost:8080/login/oauth2/code/google`. Without these set, the backend still boots
+   and the `admin` login works — only "Sign in with Google" is unavailable until configured.
+
+3. **Backend** (from `backend/`)
    ```
    ./mvnw spring-boot:run
    ```
@@ -59,7 +72,7 @@ and either Docker or a local PostgreSQL instance.
    method at the [Voyage dashboard](https://dashboard.voyageai.com/) (free tokens still apply)
    before relying on this for anything beyond a quick smoke test.
 
-3. **sync-agent** (from `sync-agent/`) — powers the subtopic Sync button; the rest of the app
+4. **sync-agent** (from `sync-agent/`) — powers the subtopic Sync button; the rest of the app
    works without it, but Sync requests will fail until it's running.
    ```
    npm install
@@ -74,14 +87,15 @@ and either Docker or a local PostgreSQL instance.
    Listens on `http://127.0.0.1:4100` (localhost only). Each Sync click spawns a real `claude`
    CLI subprocess, so requests take noticeably longer than a direct API call.
 
-4. **Frontend** (from `frontend/`)
+5. **Frontend** (from `frontend/`)
    ```
    npm install
    npm run dev
    ```
    Serves on `http://localhost:5173`, configured (via `.env`) to call the backend above.
 
-Open `http://localhost:5173` — it resolves the root board and lands you on the top-level map.
+Open `http://localhost:5173` — sign in (`admin`/`skill_loop`, or Google), then it resolves your
+root board and lands you on the top-level map.
 
 ### Run with Docker
 
@@ -114,14 +128,15 @@ hosting for a live demo link.
   text, and note-block content are embedded (Voyage AI) into Qdrant via LangChain4j as they're
   created/edited, and searched by meaning rather than exact text. Optional — see "Semantic
   search" above.
-- A mock-interview multi-agent simulator (Interviewer/Grader/Coach agents) is planned next; not
-  yet built.
+- A mock-interview multi-agent simulator (Interviewer/Grader/Coach agents).
+- Auth: sign in as the single hardcoded `admin` account, or with any Google account (which
+  auto-provisions a new, fully separate topic tree on first login). Every board/topic/note/
+  interview session and the Qdrant search index are scoped per user.
 
-Explicitly out of scope for Phase 1: authentication, cloud deployment, rich content
-authoring (handwriting/OCR/imports), further AI features beyond subtopic Sync, multi-user
-collaboration, undo/redo, search.
+Explicitly out of scope for Phase 1: cloud deployment, rich content authoring (handwriting/OCR/
+imports), further AI features beyond subtopic Sync and the mock interview, undo/redo.
 See `backend`/`frontend` source for structure; package-by-domain on the backend
-(`board/`, `node/`, `edge/`, `common/`, `config/`), feature folders on the frontend
+(`board/`, `node/`, `edge/`, `auth/`, `common/`, `config/`), feature folders on the frontend
 (`api/`, `hooks/`, `components/board/`, `pages/`).
 
 ## Contributing

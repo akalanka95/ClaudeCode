@@ -1,5 +1,6 @@
 package com.interviewprep.backend.node;
 
+import com.interviewprep.backend.auth.OwnershipGuard;
 import com.interviewprep.backend.board.Board;
 import com.interviewprep.backend.board.BoardRepository;
 import com.interviewprep.backend.common.NotFoundException;
@@ -27,12 +28,14 @@ public class NodeService {
     private final NodeRepository nodeRepository;
     private final BoardRepository boardRepository;
     private final SearchService searchService;
+    private final OwnershipGuard ownershipGuard;
 
     @Transactional
-    public Node createNode(UUID boardId, CreateNodeRequest request) {
-        if (!boardRepository.existsById(boardId)) {
-            throw new NotFoundException("Board not found: " + boardId);
-        }
+    public Node createNode(UUID boardId, CreateNodeRequest request, UUID ownerId) {
+        Board board = boardRepository
+                .findById(boardId)
+                .filter(b -> b.getOwnerId().equals(ownerId))
+                .orElseThrow(() -> new NotFoundException("Board not found: " + boardId));
         if (request.type() == NodeType.TOPIC && (request.label() == null || request.label().isBlank())) {
             throw new IllegalArgumentException("label is required for TOPIC nodes");
         }
@@ -52,6 +55,7 @@ public class NodeService {
         if (request.type() == NodeType.TOPIC) {
             Board childBoard = new Board();
             childBoard.setParentNodeId(node.getId());
+            childBoard.setOwnerId(board.getOwnerId());
             childBoard = boardRepository.save(childBoard);
 
             node.setChildBoardId(childBoard.getId());
@@ -63,8 +67,8 @@ public class NodeService {
     }
 
     @Transactional
-    public Node updateNode(UUID nodeId, UpdateNodeRequest request) {
-        Node node = getOrThrow(nodeId);
+    public Node updateNode(UUID nodeId, UpdateNodeRequest request, UUID ownerId) {
+        Node node = getOrThrow(nodeId, ownerId);
         boolean textChanged = request.label() != null || request.noteText() != null;
         if (request.label() != null) {
             node.setLabel(request.label());
@@ -95,8 +99,8 @@ public class NodeService {
     }
 
     @Transactional
-    public Node updateDetails(UUID nodeId, UpdateDetailsRequest request) {
-        Node node = getOrThrow(nodeId);
+    public Node updateDetails(UUID nodeId, UpdateDetailsRequest request, UUID ownerId) {
+        Node node = getOrThrow(nodeId, ownerId);
         node.setDetailsContent(request.detailsContent());
         node = nodeRepository.save(node);
         searchService.indexNode(node);
@@ -104,9 +108,12 @@ public class NodeService {
     }
 
     @Transactional
-    public void updatePositions(UUID boardId, BulkPositionUpdateRequest request) {
+    public void updatePositions(UUID boardId, BulkPositionUpdateRequest request, UUID ownerId) {
+        if (!ownershipGuard.isBoardOwnedBy(boardId, ownerId)) {
+            throw new NotFoundException("Board not found: " + boardId);
+        }
         for (PositionUpdate update : request.positions()) {
-            Node node = getOrThrow(update.nodeId());
+            Node node = getOrThrow(update.nodeId(), ownerId);
             if (!node.getBoardId().equals(boardId)) {
                 throw new IllegalArgumentException(
                         "Node " + update.nodeId() + " does not belong to board " + boardId);
@@ -118,15 +125,16 @@ public class NodeService {
     }
 
     @Transactional
-    public void deleteNode(UUID nodeId) {
-        if (!nodeRepository.existsById(nodeId)) {
-            throw new NotFoundException("Node not found: " + nodeId);
-        }
+    public void deleteNode(UUID nodeId, UUID ownerId) {
+        getOrThrow(nodeId, ownerId);
         nodeRepository.deleteById(nodeId);
         searchService.removeNodeFromIndex(nodeId);
     }
 
-    public Node getOrThrow(UUID nodeId) {
+    public Node getOrThrow(UUID nodeId, UUID ownerId) {
+        if (!ownershipGuard.isNodeOwnedBy(nodeId, ownerId)) {
+            throw new NotFoundException("Node not found: " + nodeId);
+        }
         return nodeRepository
                 .findById(nodeId)
                 .orElseThrow(() -> new NotFoundException("Node not found: " + nodeId));
@@ -140,13 +148,13 @@ public class NodeService {
      * elsewhere.
      */
     @Transactional(readOnly = true)
-    public List<TopicOptionResponse> listAllTopics() {
+    public List<TopicOptionResponse> listAllTopics(UUID ownerId) {
         Map<UUID, Board> boardById = new HashMap<>();
-        for (Board board : boardRepository.findAll()) {
+        for (Board board : boardRepository.findAllByOwnerId(ownerId)) {
             boardById.put(board.getId(), board);
         }
         Map<UUID, Node> nodeById = new HashMap<>();
-        for (Node node : nodeRepository.findAll()) {
+        for (Node node : nodeRepository.findByBoardIdIn(new ArrayList<>(boardById.keySet()))) {
             nodeById.put(node.getId(), node);
         }
 

@@ -1,7 +1,7 @@
 package com.interviewprep.backend.noteupload;
 
+import com.interviewprep.backend.auth.OwnershipGuard;
 import com.interviewprep.backend.common.NotFoundException;
-import com.interviewprep.backend.node.NodeRepository;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +18,11 @@ public class NoteUploadService {
     private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024;
 
     private final NoteUploadRepository noteUploadRepository;
-    private final NodeRepository nodeRepository;
+    private final OwnershipGuard ownershipGuard;
     private final NoteUploadRunner noteUploadRunner;
 
-    public NoteUpload triggerSummarize(UUID nodeId, MultipartFile file) {
-        if (!nodeRepository.existsById(nodeId)) {
+    public NoteUpload triggerSummarize(UUID nodeId, MultipartFile file, UUID ownerId) {
+        if (!ownershipGuard.isNodeOwnedBy(nodeId, ownerId)) {
             throw new NotFoundException("Node not found: " + nodeId);
         }
         if (file == null || file.isEmpty()) {
@@ -59,7 +59,10 @@ public class NoteUploadService {
     }
 
     @Transactional(readOnly = true)
-    public NoteUpload getUpload(UUID nodeId, UUID uploadId) {
+    public NoteUpload getUpload(UUID nodeId, UUID uploadId, UUID ownerId) {
+        if (!ownershipGuard.isNodeOwnedBy(nodeId, ownerId)) {
+            throw new NotFoundException("Note upload not found: " + uploadId);
+        }
         NoteUpload upload = noteUploadRepository
                 .findById(uploadId)
                 .orElseThrow(() -> new NotFoundException("Note upload not found: " + uploadId));

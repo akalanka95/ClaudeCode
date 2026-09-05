@@ -1,5 +1,6 @@
 package com.interviewprep.backend.interview;
 
+import com.interviewprep.backend.auth.OwnershipGuard;
 import com.interviewprep.backend.board.Board;
 import com.interviewprep.backend.board.BoardRepository;
 import com.interviewprep.backend.common.ConflictException;
@@ -20,6 +21,7 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
+import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -76,6 +78,7 @@ public class InterviewSessionService {
     private final InterviewTurnRepository turnRepository;
     private final NodeRepository nodeRepository;
     private final BoardRepository boardRepository;
+    private final OwnershipGuard ownershipGuard;
     private final EmbeddingModel embeddingModel;
     private final EmbeddingStore<TextSegment> embeddingStore;
     private final InterviewerAgent interviewerAgent;
@@ -91,6 +94,7 @@ public class InterviewSessionService {
             InterviewTurnRepository turnRepository,
             NodeRepository nodeRepository,
             BoardRepository boardRepository,
+            OwnershipGuard ownershipGuard,
             @Lazy EmbeddingModel embeddingModel,
             @Lazy EmbeddingStore<TextSegment> embeddingStore,
             @Lazy InterviewerAgent interviewerAgent,
@@ -100,6 +104,7 @@ public class InterviewSessionService {
         this.turnRepository = turnRepository;
         this.nodeRepository = nodeRepository;
         this.boardRepository = boardRepository;
+        this.ownershipGuard = ownershipGuard;
         this.embeddingModel = embeddingModel;
         this.embeddingStore = embeddingStore;
         this.interviewerAgent = interviewerAgent;
@@ -107,13 +112,16 @@ public class InterviewSessionService {
         this.coachAgent = coachAgent;
     }
 
-    public InterviewSessionResponse createSession(CreateInterviewSessionRequest request) {
+    public InterviewSessionResponse createSession(CreateInterviewSessionRequest request, UUID ownerId) {
         int questionCount = request.questionCount() == null
                 ? DEFAULT_QUESTION_COUNT
                 : Math.min(Math.max(request.questionCount(), MIN_QUESTION_COUNT), MAX_QUESTION_COUNT);
 
         List<Node> topics = new ArrayList<>();
         for (UUID id : request.topicNodeIds()) {
+            if (!ownershipGuard.isNodeOwnedBy(id, ownerId)) {
+                throw new NotFoundException("Topic not found: " + id);
+            }
             Node node = nodeRepository.findById(id).orElseThrow(() -> new NotFoundException("Topic not found: " + id));
             if (node.getType() != NodeType.TOPIC) {
                 throw new IllegalArgumentException("Node " + id + " is not a TOPIC");
@@ -123,13 +131,14 @@ public class InterviewSessionService {
 
         List<InterviewTopicSnapshot> snapshots =
                 topics.stream().map(t -> new InterviewTopicSnapshot(t.getId(), t.getLabel(), buildPath(t))).toList();
-        String context = retrieveContext(topics);
+        String context = retrieveContext(topics, ownerId);
 
         // Each save below is its own short transaction, deliberately not wrapped in one
         // @Transactional block — this method makes blocking external LLM calls, and holding a DB
         // transaction open across those would be needless (see SubtopicSyncRunner for the same
         // reasoning around the sync feature's external call).
         InterviewSession session = new InterviewSession();
+        session.setOwnerId(ownerId);
         session.setTopics(snapshots);
         session.setRetrievedContext(context);
         session.setStatus(InterviewSessionStatus.IN_PROGRESS);
@@ -150,23 +159,23 @@ public class InterviewSessionService {
     }
 
     @Transactional(readOnly = true)
-    public List<InterviewSessionResponse> listSessions() {
-        return sessionRepository.findAllByOrderByCreatedAtDesc().stream()
+    public List<InterviewSessionResponse> listSessions(UUID ownerId) {
+        return sessionRepository.findAllByOwnerIdOrderByCreatedAtDesc(ownerId).stream()
                 .map(session -> toSessionResponse(
                         session, turnRepository.findBySessionIdOrderByTurnIndexAsc(session.getId())))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public InterviewSessionResponse getSession(UUID sessionId) {
-        InterviewSession session = getSessionOrThrow(sessionId);
+    public InterviewSessionResponse getSession(UUID sessionId, UUID ownerId) {
+        InterviewSession session = getSessionOrThrow(sessionId, ownerId);
         return toSessionResponse(session, turnRepository.findBySessionIdOrderByTurnIndexAsc(sessionId));
     }
 
     @Async("interviewTaskExecutor")
-    public void submitAnswer(UUID sessionId, int turnIndex, String answer, SseEmitter emitter) {
+    public void submitAnswer(UUID sessionId, int turnIndex, String answer, SseEmitter emitter, UUID ownerId) {
         try {
-            InterviewSession session = getSessionOrThrow(sessionId);
+            InterviewSession session = getSessionOrThrow(sessionId, ownerId);
             InterviewTurn turn = turnRepository
                     .findBySessionIdAndTurnIndex(sessionId, turnIndex)
                     .orElseThrow(() -> new NotFoundException("Turn not found: " + turnIndex));
@@ -224,9 +233,10 @@ public class InterviewSessionService {
         }
     }
 
-    private InterviewSession getSessionOrThrow(UUID sessionId) {
+    private InterviewSession getSessionOrThrow(UUID sessionId, UUID ownerId) {
         return sessionRepository
                 .findById(sessionId)
+                .filter(session -> session.getOwnerId().equals(ownerId))
                 .orElseThrow(() -> new NotFoundException("Interview session not found: " + sessionId));
     }
 
@@ -344,7 +354,7 @@ public class InterviewSessionService {
         return scores.stream().mapToInt(Integer::intValue).average().orElse(0.0);
     }
 
-    private String retrieveContext(List<Node> topics) {
+    private String retrieveContext(List<Node> topics, UUID ownerId) {
         StringBuilder context = new StringBuilder();
         for (Node topic : topics) {
             Set<UUID> scope = scopedNodeIds(topic);
@@ -354,6 +364,7 @@ public class InterviewSessionService {
                     .queryEmbedding(queryEmbedding)
                     .maxResults(CONTEXT_OVERFETCH)
                     .minScore(0.0)
+                    .filter(metadataKey("userId").isEqualTo(ownerId.toString()))
                     .build();
 
             List<String> chunks = embeddingStore.search(request).matches().stream()

@@ -15,10 +15,22 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:unconfigured}
+            client-secret: ${GOOGLE_CLIENT_SECRET:unconfigured}
 
 app:
   cors:
     allowed-origin: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  jwt:
+    secret: ${APP_JWT_SECRET:dev-only-secret-change-me-dev-only-secret-change-me}
+    expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:10080}
+  oauth:
+    frontend-redirect-base-url: ${APP_OAUTH_FRONTEND_REDIRECT_BASE_URL:http://localhost:5173}
   sync-agent:
     base-url: ${APP_SYNC_AGENT_BASE_URL:http://127.0.0.1:4100}
   anthropic:

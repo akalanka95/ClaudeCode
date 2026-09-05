@@ -225,3 +225,23 @@ export interface CreateInterviewSessionRequest {
 export interface SubmitAnswerRequest {
   answer: string;
 }
+
+export type AuthProvider = "LOCAL" | "GOOGLE";
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface CurrentUserResponse {
+  id: string;
+  username: string | null;
+  email: string | null;
+  displayName: string | null;
+  authProvider: AuthProvider;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: CurrentUserResponse;
+}
