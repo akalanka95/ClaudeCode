@@ -15,6 +15,14 @@ services:
       timeout: 5s
       retries: 10
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrantdata:/qdrant/storage
+
   backend:
     build: ./backend
     environment:
@@ -22,12 +30,18 @@ services:
       SPRING_DATASOURCE_USERNAME: interviewprep
       SPRING_DATASOURCE_PASSWORD: interviewprep
       APP_CORS_ALLOWED_ORIGIN: http://localhost:5173
+      APP_QDRANT_HOST: qdrant
+      APP_QDRANT_GRPC_PORT: 6334
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       PORT: 8080
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      qdrant:
+        condition: service_started
 
   frontend:
     build:
@@ -42,3 +56,4 @@ services:
 
 volumes:
   pgdata:
+  qdrantdata:

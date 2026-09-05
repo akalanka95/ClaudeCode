@@ -14,20 +14,23 @@ Spring Boot API.
 - **sync-agent**: a small Node service (Express + `@anthropic-ai/claude-agent-sdk`) that the
   backend calls internally to run the subtopic Sync feature's web search, billed against your
   Claude Code subscription rather than a separate Anthropic API account.
+- **Semantic search**: LangChain4j inside the backend (Anthropic + Voyage AI, metered API keys)
+  indexes Topic/Subtopic/Note content into Qdrant for the search bar.
 
 ## Running locally
 
 Requires: Java 17+ (bundled Maven Wrapper, no separate Maven install needed), Node.js 18+/npm,
 and either Docker or a local PostgreSQL instance.
 
-1. **Database**
+1. **Database + vector store**
    ```
-   docker compose up -d
+   docker compose up -d postgres qdrant
    ```
-   This starts Postgres on `localhost:5432` with database `interviewprep` /
-   user `interviewprep` / password `interviewprep` (see `docker-compose.yml`).
-   If you'd rather use a local Postgres install, create a database and credentials matching
-   `backend/src/main/resources/application.yml`.
+   This starts Postgres on `localhost:5432` (database/user/password `interviewprep`) and Qdrant
+   on `localhost:6334` (gRPC, used by the backend) / `localhost:6333` (REST, its dashboard) — see
+   `docker-compose.yml`. If you'd rather use local installs, create a Postgres database matching
+   `backend/src/main/resources/application.yml`, and point `APP_QDRANT_HOST`/
+   `APP_QDRANT_GRPC_PORT` at your own Qdrant instance.
 
 2. **Backend** (from `backend/`)
    ```
@@ -35,6 +38,12 @@ and either Docker or a local PostgreSQL instance.
    ```
    (On Windows: `.\mvnw.cmd spring-boot:run`.) Flyway runs the schema migration automatically
    on startup. The API serves on `http://localhost:8080/api/v1`.
+
+   Semantic search is optional, like `sync-agent` below: the rest of the app works without it,
+   and it stays inert until you set `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY` (metered keys, not
+   the Claude Code subscription `sync-agent` uses) — without them, search requests fail rather
+   than blocking startup. Once set, backfill the index once with
+   `curl -X POST http://localhost:8080/api/v1/search/reindex`.
 
 3. **sync-agent** (from `sync-agent/`) — powers the subtopic Sync button; the rest of the app
    works without it, but Sync requests will fail until it's running.
@@ -66,10 +75,13 @@ Open `http://localhost:5173` — it resolves the root board and lands you on the
 docker compose up --build
 ```
 
-Brings up Postgres, the backend, and the frontend together (`http://localhost:5173`) with no
-manual Maven/npm steps. The Sync feature is disabled in this build (see `DEPLOYMENT.md`); the
-`sync-agent` sidecar still needs to be run manually if you want it. See `DEPLOYMENT.md` for
-deploying this to free-tier hosting for a live demo link.
+Brings up Postgres, Qdrant, the backend, and the frontend together (`http://localhost:5173`) with
+no manual Maven/npm steps. The Sync feature is disabled in this build (see `DEPLOYMENT.md`); the
+`sync-agent` sidecar still needs to be run manually if you want it. Semantic search works in this
+build if `ANTHROPIC_API_KEY`/`VOYAGE_API_KEY` are set in your shell before running the command
+(passed through to the `backend` service — see `docker-compose.yml`); otherwise search requests
+fail and everything else works normally. See `DEPLOYMENT.md` for deploying this to free-tier
+hosting for a live demo link.
 
 ## What's implemented (Phase 1)
 
@@ -82,7 +94,16 @@ deploying this to free-tier hosting for a live demo link.
   and the Claude Agent SDK) to fetch and summarize recent developments related to that topic,
   with a visible history per subtopic.
 
-Explicitly out of scope for this phase: authentication, cloud deployment, rich content
+## What's implemented (Phase 2, in progress)
+
+- Semantic search (search bar in the top nav): Topic/Subtopic labels, Details content, Note
+  text, and note-block content are embedded (Voyage AI) into Qdrant via LangChain4j as they're
+  created/edited, and searched by meaning rather than exact text. Optional — see "Semantic
+  search" above.
+- A mock-interview multi-agent simulator (Interviewer/Grader/Coach agents) is planned next; not
+  yet built.
+
+Explicitly out of scope for Phase 1: authentication, cloud deployment, rich content
 authoring (handwriting/OCR/imports), further AI features beyond subtopic Sync, multi-user
 collaboration, undo/redo, search.
 See `backend`/`frontend` source for structure; package-by-domain on the backend

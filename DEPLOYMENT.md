@@ -9,15 +9,24 @@ process, which isn't something to expose publicly. The Docker/deploy builds set
 `VITE_ENABLE_SYNC=false`, which hides the Sync button entirely; everything else (topics,
 subtopics, edges, note blocks, details, references) works normally.
 
+Semantic search is different: it uses standard metered API keys (`ANTHROPIC_API_KEY`,
+`VOYAGE_API_KEY`), so — unlike Sync — it *can* be exposed publicly. But "can" isn't "should
+by default": every search request costs real money on a link anyone can hit with no login. The
+local Docker build below leaves it on (nothing to spend against unless you supply keys); the
+public deploy steps set `VITE_ENABLE_SEARCH=false` and leave it opt-in — flip it on only after
+setting a spend limit for those keys in the Anthropic/Voyage consoles.
+
 ## Run the full stack locally with Docker
 
 ```
 docker compose up --build
 ```
 
-Starts Postgres, the backend (`http://localhost:8080/api/v1`), and the frontend
+Starts Postgres, Qdrant, the backend (`http://localhost:8080/api/v1`), and the frontend
 (`http://localhost:5173`) together. No manual Maven/npm steps needed. Stop with `Ctrl+C`, or
-`docker compose down` (add `-v` to also drop the Postgres volume).
+`docker compose down` (add `-v` to also drop the Postgres/Qdrant volumes). Semantic search works
+if `ANTHROPIC_API_KEY`/`VOYAGE_API_KEY` are set in your shell before running the command (see
+`docker-compose.yml`); otherwise it stays inert and everything else works normally.
 
 ## Deploy a live demo
 
@@ -34,6 +43,11 @@ Starts Postgres, the backend (`http://localhost:8080/api/v1`), and the frontend
    - `APP_CORS_ALLOWED_ORIGIN` = the frontend URL from step 5 below (you can come back and set
      this once you have it)
    - Render injects `PORT` automatically; `application.yml` already reads it.
+   - Leave `ANTHROPIC_API_KEY`/`VOYAGE_API_KEY`/`APP_QDRANT_HOST` unset unless you're turning on
+     semantic search publicly (see the caveat above) — the backend boots fine without them, that
+     feature just stays inert. If you do turn it on, you'll also need a reachable Qdrant instance
+     (e.g. Qdrant Cloud's free tier — set `APP_QDRANT_HOST`, `APP_QDRANT_USE_TLS=true`, and
+     `APP_QDRANT_API_KEY` to match).
 5. Deploy, then confirm `https://<your-backend>.onrender.com/api/v1/boards/root` returns JSON.
 
 Railway works the same way (Dockerfile-based service + managed Postgres + the same env vars) if
@@ -46,6 +60,8 @@ you prefer it.
 3. Environment variables:
    - `VITE_API_BASE_URL` = `https://<your-backend>.onrender.com/api/v1`
    - `VITE_ENABLE_SYNC` = `false`
+   - `VITE_ENABLE_SEARCH` = `false` (flip to `true` only once the backend's search keys are set
+     *and* you've set a spend limit for them — see the caveat above)
 4. Deploy, then go back to the backend's `APP_CORS_ALLOWED_ORIGIN` and set it to this frontend's
    URL (e.g. `https://your-app.vercel.app`), redeploying the backend so CORS allows it.
 

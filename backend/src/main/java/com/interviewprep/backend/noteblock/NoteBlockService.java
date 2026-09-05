@@ -4,6 +4,7 @@ import com.interviewprep.backend.common.NotFoundException;
 import com.interviewprep.backend.node.NodeRepository;
 import com.interviewprep.backend.noteblock.dto.CreateNoteBlockRequest;
 import com.interviewprep.backend.noteblock.dto.UpdateNoteBlockRequest;
+import com.interviewprep.backend.search.SearchService;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class NoteBlockService {
 
     private final NoteBlockRepository noteBlockRepository;
     private final NodeRepository nodeRepository;
+    private final SearchService searchService;
 
     @Transactional(readOnly = true)
     public List<NoteBlock> list(UUID nodeId) {
@@ -78,7 +80,11 @@ public class NoteBlockService {
             noteBlock.setZIndex(request.zIndex());
         }
 
-        return noteBlockRepository.save(noteBlock);
+        noteBlock = noteBlockRepository.save(noteBlock);
+        if (request.content() != null) {
+            searchService.indexNoteBlock(noteBlock);
+        }
+        return noteBlock;
     }
 
     @Transactional
@@ -87,6 +93,7 @@ public class NoteBlockService {
             throw new NotFoundException("Note block not found: " + noteBlockId);
         }
         noteBlockRepository.deleteById(noteBlockId);
+        searchService.removeNoteBlockFromIndex(noteBlockId);
     }
 
     private void requireNode(UUID nodeId) {

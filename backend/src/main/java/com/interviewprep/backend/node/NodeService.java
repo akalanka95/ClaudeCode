@@ -8,6 +8,7 @@ import com.interviewprep.backend.node.dto.CreateNodeRequest;
 import com.interviewprep.backend.node.dto.PositionUpdate;
 import com.interviewprep.backend.node.dto.UpdateDetailsRequest;
 import com.interviewprep.backend.node.dto.UpdateNodeRequest;
+import com.interviewprep.backend.search.SearchService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class NodeService {
 
     private final NodeRepository nodeRepository;
     private final BoardRepository boardRepository;
+    private final SearchService searchService;
 
     @Transactional
     public Node createNode(UUID boardId, CreateNodeRequest request) {
@@ -50,12 +52,14 @@ public class NodeService {
             node = nodeRepository.save(node);
         }
 
+        searchService.indexNode(node);
         return node;
     }
 
     @Transactional
     public Node updateNode(UUID nodeId, UpdateNodeRequest request) {
         Node node = getOrThrow(nodeId);
+        boolean textChanged = request.label() != null || request.noteText() != null;
         if (request.label() != null) {
             node.setLabel(request.label());
         }
@@ -77,14 +81,20 @@ public class NodeService {
         if (request.completed() != null) {
             node.setCompleted(request.completed());
         }
-        return nodeRepository.save(node);
+        node = nodeRepository.save(node);
+        if (textChanged) {
+            searchService.indexNode(node);
+        }
+        return node;
     }
 
     @Transactional
     public Node updateDetails(UUID nodeId, UpdateDetailsRequest request) {
         Node node = getOrThrow(nodeId);
         node.setDetailsContent(request.detailsContent());
-        return nodeRepository.save(node);
+        node = nodeRepository.save(node);
+        searchService.indexNode(node);
+        return node;
     }
 
     @Transactional
@@ -107,6 +117,7 @@ public class NodeService {
             throw new NotFoundException("Node not found: " + nodeId);
         }
         nodeRepository.deleteById(nodeId);
+        searchService.removeNodeFromIndex(nodeId);
     }
 
     public Node getOrThrow(UUID nodeId) {
