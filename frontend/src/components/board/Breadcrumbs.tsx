@@ -3,6 +3,7 @@ import type { BreadcrumbItem } from "../../types/api";
 import { SearchBar } from "../search/SearchBar";
 
 const SEARCH_ENABLED = import.meta.env.VITE_ENABLE_SEARCH !== "false";
+const INTERVIEW_ENABLED = import.meta.env.VITE_ENABLE_INTERVIEW !== "false";
 
 interface BreadcrumbsProps {
   items: BreadcrumbItem[];
@@ -42,6 +43,25 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
           </span>
         ))}
       </div>
+      {INTERVIEW_ENABLED && (
+        <>
+          {/* Mobile (<sm): icon-only, matching the search button's compact footprint. */}
+          <Link
+            to="/interview"
+            aria-label="Mock Interview"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-slate-500 hover:bg-slate-50 sm:hidden"
+          >
+            <span aria-hidden>&#127908;</span>
+          </Link>
+          {/* Desktop (sm+): labeled pill. */}
+          <Link
+            to="/interview"
+            className="hidden shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600 sm:flex"
+          >
+            Mock Interview
+          </Link>
+        </>
+      )}
       {SEARCH_ENABLED && <SearchBar />}
     </nav>
   );

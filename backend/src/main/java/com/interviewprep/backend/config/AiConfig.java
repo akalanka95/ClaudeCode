@@ -2,7 +2,9 @@ package com.interviewprep.backend.config;
 
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.voyageai.VoyageAiEmbeddingModel;
 import dev.langchain4j.model.voyageai.VoyageAiEmbeddingModelName;
@@ -20,9 +22,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
 /**
- * Shared LangChain4j/Qdrant infrastructure beans used by the {@code search} domain (and, later,
- * the interview-simulator domain). Kept here rather than per-domain since both consume the same
- * chat model, embedding model, and vector store.
+ * Shared LangChain4j/Qdrant infrastructure beans used by the {@code search} and {@code interview}
+ * domains. Kept here rather than per-domain since both consume the same chat model, embedding
+ * model, and vector store.
  *
  * <p>Every bean here is {@link Lazy}: the Anthropic/Voyage AI client builders validate their API
  * key eagerly, and connecting to Qdrant to check/create the collection is a real network call —
@@ -42,6 +44,17 @@ public class AiConfig {
     @Lazy
     public ChatModel chatModel(@Value("${app.anthropic.api-key}") String apiKey) {
         return AnthropicChatModel.builder()
+                .apiKey(apiKey)
+                .modelName("claude-sonnet-5")
+                .maxTokens(2048)
+                .timeout(Duration.ofSeconds(60))
+                .build();
+    }
+
+    @Bean
+    @Lazy
+    public StreamingChatModel streamingChatModel(@Value("${app.anthropic.api-key}") String apiKey) {
+        return AnthropicStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .modelName("claude-sonnet-5")
                 .maxTokens(2048)

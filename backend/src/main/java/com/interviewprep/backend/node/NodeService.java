@@ -6,9 +6,15 @@ import com.interviewprep.backend.common.NotFoundException;
 import com.interviewprep.backend.node.dto.BulkPositionUpdateRequest;
 import com.interviewprep.backend.node.dto.CreateNodeRequest;
 import com.interviewprep.backend.node.dto.PositionUpdate;
+import com.interviewprep.backend.node.dto.TopicOptionResponse;
 import com.interviewprep.backend.node.dto.UpdateDetailsRequest;
 import com.interviewprep.backend.node.dto.UpdateNodeRequest;
 import com.interviewprep.backend.search.SearchService;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -124,5 +130,53 @@ public class NodeService {
         return nodeRepository
                 .findById(nodeId)
                 .orElseThrow(() -> new NotFoundException("Node not found: " + nodeId));
+    }
+
+    /**
+     * Flat list of every TOPIC node across all boards, each with its ancestor breadcrumb, for a
+     * cross-map topic picker (e.g. the mock-interview setup page). Loads every board/node into
+     * memory rather than a recursive SQL query — the whole map is small enough at this project's
+     * scale, and building the ancestor chain in Java matches how breadcrumbs are already built
+     * elsewhere.
+     */
+    @Transactional(readOnly = true)
+    public List<TopicOptionResponse> listAllTopics() {
+        Map<UUID, Board> boardById = new HashMap<>();
+        for (Board board : boardRepository.findAll()) {
+            boardById.put(board.getId(), board);
+        }
+        Map<UUID, Node> nodeById = new HashMap<>();
+        for (Node node : nodeRepository.findAll()) {
+            nodeById.put(node.getId(), node);
+        }
+
+        List<TopicOptionResponse> topics = new ArrayList<>();
+        for (Node node : nodeById.values()) {
+            if (node.getType() != NodeType.TOPIC) {
+                continue;
+            }
+            topics.add(new TopicOptionResponse(
+                    node.getId(), node.getLabel(), node.getBoardId(), ancestorPath(node, boardById, nodeById)));
+        }
+        topics.sort(Comparator.comparing(t -> String.join(" > ", t.path()) + " > " + t.label()));
+        return topics;
+    }
+
+    private List<String> ancestorPath(Node node, Map<UUID, Board> boardById, Map<UUID, Node> nodeById) {
+        List<String> path = new ArrayList<>();
+        UUID currentBoardId = node.getBoardId();
+        while (currentBoardId != null) {
+            Board board = boardById.get(currentBoardId);
+            if (board == null || board.getParentNodeId() == null) {
+                break;
+            }
+            Node ownerNode = nodeById.get(board.getParentNodeId());
+            if (ownerNode == null) {
+                break;
+            }
+            path.add(0, ownerNode.getLabel());
+            currentBoardId = ownerNode.getBoardId();
+        }
+        return path;
     }
 }

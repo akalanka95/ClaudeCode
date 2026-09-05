@@ -177,3 +177,51 @@ export interface SearchResultResponse {
 export interface SearchResponse {
   results: SearchResultResponse[];
 }
+
+export interface TopicOptionResponse {
+  nodeId: string;
+  label: string | null;
+  boardId: string;
+  path: string[];
+}
+
+export type InterviewSessionStatus = "IN_PROGRESS" | "COMPLETED";
+export type InterviewTurnStatus = "PENDING_ANSWER" | "GRADED";
+
+export interface InterviewTopicSnapshot {
+  nodeId: string;
+  label: string | null;
+  path: string[];
+}
+
+export interface InterviewTurnResponse {
+  id: string;
+  turnIndex: number;
+  question: string;
+  answer: string | null;
+  score: number | null;
+  graderFeedback: string | null;
+  coachFeedback: string | null;
+  status: InterviewTurnStatus;
+}
+
+export interface InterviewSessionResponse {
+  id: string;
+  topics: InterviewTopicSnapshot[];
+  status: InterviewSessionStatus;
+  totalQuestions: number;
+  currentTurnIndex: number;
+  overallScore: number | null;
+  createdAt: string;
+  completedAt: string | null;
+  turns: InterviewTurnResponse[];
+}
+
+export interface CreateInterviewSessionRequest {
+  topicNodeIds: string[];
+  questionCount?: number;
+}
+
+export interface SubmitAnswerRequest {
+  answer: string;
+}
