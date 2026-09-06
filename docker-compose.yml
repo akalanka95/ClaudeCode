@@ -34,6 +34,8 @@ services:
       APP_CORS_ALLOWED_ORIGIN: http://localhost:5173
       APP_QDRANT_HOST: qdrant
       APP_QDRANT_GRPC_PORT: 6334
+      APP_QDRANT_USE_TLS: "false"
+      APP_QDRANT_API_KEY: ""
       APP_OAUTH_FRONTEND_REDIRECT_BASE_URL: http://localhost:5173
       PORT: 8080
     ports:

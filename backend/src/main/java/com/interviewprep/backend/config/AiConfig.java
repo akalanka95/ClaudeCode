@@ -13,6 +13,7 @@ import dev.langchain4j.store.embedding.qdrant.QdrantEmbeddingStore;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Collections.Distance;
+import io.qdrant.client.grpc.Collections.PayloadSchemaType;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -36,7 +37,7 @@ import org.springframework.context.annotation.Lazy;
 @Configuration
 public class AiConfig {
 
-    static final String NODES_COLLECTION = "nodes";
+    public static final String NODES_COLLECTION = "nodes";
     private static final VoyageAiEmbeddingModelName EMBEDDING_MODEL_NAME =
             VoyageAiEmbeddingModelName.VOYAGE_3_LITE;
 
@@ -74,18 +75,23 @@ public class AiConfig {
             @Value("${app.qdrant.host}") String host,
             @Value("${app.qdrant.grpc-port}") int grpcPort,
             @Value("${app.qdrant.use-tls}") boolean useTls,
-            @Value("${app.qdrant.api-key}") String apiKey) {
+            @Value("${app.qdrant.api-key}") String apiKey)
+            throws ExecutionException, InterruptedException {
         QdrantGrpcClient.Builder builder = QdrantGrpcClient.newBuilder(host, grpcPort, useTls);
         if (!apiKey.isBlank()) {
             builder.withApiKey(apiKey);
         }
-        return new QdrantClient(builder.build());
+        QdrantClient client = new QdrantClient(builder.build());
+        // Done here (rather than in the embeddingStore bean below) so it also covers
+        // SearchService's direct QdrantClient injection for querying.
+        ensureCollectionExists(client);
+        ensureOwnerIndexExists(client);
+        return client;
     }
 
     @Bean
     @Lazy
-    public EmbeddingStore<TextSegment> embeddingStore(QdrantClient qdrantClient) throws ExecutionException, InterruptedException {
-        ensureCollectionExists(qdrantClient);
+    public EmbeddingStore<TextSegment> embeddingStore(QdrantClient qdrantClient) {
         return QdrantEmbeddingStore.builder().client(qdrantClient).collectionName(NODES_COLLECTION).build();
     }
 
@@ -98,6 +104,18 @@ public class AiConfig {
                             .setDistance(Distance.Cosine)
                             .build();
             client.createCollectionAsync(NODES_COLLECTION, vectorParams).get();
+        }
+    }
+
+    // SearchService filters every search by the "userId" payload field (see its ownerFilter).
+    // Some Qdrant deployments (e.g. Qdrant Cloud) reject filtering on a field with no payload
+    // index ("Index required but not found"), while others (the local dev Qdrant) allow it via
+    // an unindexed scan — so this can't be caught by local testing alone.
+    private void ensureOwnerIndexExists(QdrantClient client) throws ExecutionException, InterruptedException {
+        boolean exists = client.getCollectionInfoAsync(NODES_COLLECTION).get().containsPayloadSchema("userId");
+        if (!exists) {
+            client.createPayloadIndexAsync(NODES_COLLECTION, "userId", PayloadSchemaType.Keyword, null, null, null, null)
+                    .get();
         }
     }
 }
