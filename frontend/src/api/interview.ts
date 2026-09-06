@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { getStoredToken } from "./authToken";
 import type {
   CreateInterviewSessionRequest,
   InterviewSessionResponse,
@@ -44,11 +45,15 @@ export async function submitAnswer(
   answer: string,
   handlers: InterviewStreamHandlers,
 ): Promise<void> {
+  const token = getStoredToken();
   const response = await fetch(
     `${API_BASE_URL}/interview/sessions/${sessionId}/turns/${turnIndex}/answer`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ answer }),
     },
   );
