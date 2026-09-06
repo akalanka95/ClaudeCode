@@ -2,6 +2,7 @@ package com.interviewprep.backend.search;
 
 import com.interviewprep.backend.board.Board;
 import com.interviewprep.backend.board.BoardRepository;
+import com.interviewprep.backend.config.AiConfig;
 import com.interviewprep.backend.node.Node;
 import com.interviewprep.backend.node.NodeRepository;
 import com.interviewprep.backend.node.NodeType;
@@ -12,16 +13,21 @@ import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.store.embedding.EmbeddingMatch;
-import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-import dev.langchain4j.store.embedding.filter.Filter;
-import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
+import io.qdrant.client.ConditionFactory;
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QueryFactory;
+import io.qdrant.client.WithPayloadSelectorFactory;
+import io.qdrant.client.grpc.JsonWithInt.Value;
+import io.qdrant.client.grpc.Points.Filter;
+import io.qdrant.client.grpc.Points.QueryPoints;
+import io.qdrant.client.grpc.Points.ScoredPoint;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import org.jsoup.Jsoup;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
@@ -49,22 +55,25 @@ public class SearchService {
 
     private final EmbeddingModel embeddingModel;
     private final EmbeddingStore<TextSegment> embeddingStore;
+    private final QdrantClient qdrantClient;
     private final NodeRepository nodeRepository;
     private final NoteBlockRepository noteBlockRepository;
     private final BoardRepository boardRepository;
 
     // Explicit constructor (not Lombok's @RequiredArgsConstructor) so @Lazy can be placed on the
-    // two AI client params: SearchService itself is eagerly created (NodeService depends on it),
+    // AI client params: SearchService itself is eagerly created (NodeService depends on it),
     // so without @Lazy right here, resolving these constructor arguments would still eagerly
     // build the Anthropic/Voyage/Qdrant clients at startup — see AiConfig's class-level note.
     public SearchService(
             @Lazy EmbeddingModel embeddingModel,
             @Lazy EmbeddingStore<TextSegment> embeddingStore,
+            @Lazy QdrantClient qdrantClient,
             NodeRepository nodeRepository,
             NoteBlockRepository noteBlockRepository,
             BoardRepository boardRepository) {
         this.embeddingModel = embeddingModel;
         this.embeddingStore = embeddingStore;
+        this.qdrantClient = qdrantClient;
         this.nodeRepository = nodeRepository;
         this.noteBlockRepository = noteBlockRepository;
         this.boardRepository = boardRepository;
@@ -105,27 +114,42 @@ public class SearchService {
         }
 
         Embedding queryEmbedding = embeddingModel.embed(query).content();
-        EmbeddingSearchRequest request =
-                EmbeddingSearchRequest.builder()
-                        .queryEmbedding(queryEmbedding)
-                        // Overfetch: several matches can collapse onto the same owning node (its
-                        // own content plus one or more note blocks), and some may point at a
-                        // since-deleted node, so more raw matches than `limit` are needed to end
-                        // up with `limit` real results.
-                        .maxResults(Math.max(limit * 4, 20))
-                        .minScore(MIN_SCORE)
-                        .filter(ownerFilter(ownerId))
-                        .build();
+        // Queried directly against QdrantClient (not via langchain4j's EmbeddingStore.search)
+        // and without requesting vectors back: langchain4j-qdrant re-scores matches client-side
+        // by cosine-comparing the returned point vectors against the query vector, but newer
+        // Qdrant servers (Qdrant Cloud runs 1.19.x) reply with a "named vector" wire shape this
+        // client version doesn't parse, so those vectors silently come back empty and the
+        // re-score blows up. Skip all that and trust the score Qdrant's server already computed.
+        QueryPoints request = QueryPoints.newBuilder()
+                .setCollectionName(AiConfig.NODES_COLLECTION)
+                .setQuery(QueryFactory.nearest(queryEmbedding.vectorAsList()))
+                .setWithPayload(WithPayloadSelectorFactory.enable(true))
+                // Overfetch: several matches can collapse onto the same owning node (its own
+                // content plus one or more note blocks), and some may point at a since-deleted
+                // node, so more raw matches than `limit` are needed to end up with `limit` real
+                // results.
+                .setLimit(Math.max(limit * 4, 20))
+                .setFilter(ownerFilter(ownerId))
+                .build();
 
-        List<EmbeddingMatch<TextSegment>> matches = embeddingStore.search(request).matches();
+        List<ScoredPoint> matches;
+        try {
+            matches = qdrantClient.queryAsync(request).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
         Map<UUID, Double> bestScoreByNode = new HashMap<>();
-        for (EmbeddingMatch<TextSegment> match : matches) {
-            UUID nodeId = match.embedded().metadata().getUUID("nodeId");
-            if (nodeId == null) {
+        for (ScoredPoint match : matches) {
+            if (match.getScore() < MIN_SCORE) {
                 continue;
             }
-            bestScoreByNode.merge(nodeId, match.score(), Math::max);
+            Value nodeIdValue = match.getPayloadMap().get("nodeId");
+            if (nodeIdValue == null) {
+                continue;
+            }
+            UUID nodeId = UUID.fromString(nodeIdValue.getStringValue());
+            bestScoreByNode.merge(nodeId, (double) match.getScore(), Math::max);
         }
 
         return bestScoreByNode.entrySet().stream()
@@ -179,7 +203,9 @@ public class SearchService {
     }
 
     private static Filter ownerFilter(UUID ownerId) {
-        return metadataKey("userId").isEqualTo(ownerId.toString());
+        return Filter.newBuilder()
+                .addMust(ConditionFactory.matchKeyword("userId", ownerId.toString()))
+                .build();
     }
 
     private SearchResultResponse toResult(UUID nodeId, double score) {
