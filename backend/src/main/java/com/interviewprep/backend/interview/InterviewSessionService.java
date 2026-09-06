@@ -5,6 +5,7 @@ import com.interviewprep.backend.board.Board;
 import com.interviewprep.backend.board.BoardRepository;
 import com.interviewprep.backend.common.ConflictException;
 import com.interviewprep.backend.common.NotFoundException;
+import com.interviewprep.backend.config.AiConfig;
 import com.interviewprep.backend.interview.agent.CoachAgent;
 import com.interviewprep.backend.interview.agent.GraderAgent;
 import com.interviewprep.backend.interview.agent.InterviewerAgent;
@@ -16,12 +17,15 @@ import com.interviewprep.backend.node.Node;
 import com.interviewprep.backend.node.NodeRepository;
 import com.interviewprep.backend.node.NodeType;
 import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.store.embedding.EmbeddingMatch;
-import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
-import dev.langchain4j.store.embedding.EmbeddingStore;
-import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
+import io.qdrant.client.ConditionFactory;
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QueryFactory;
+import io.qdrant.client.WithPayloadSelectorFactory;
+import io.qdrant.client.grpc.JsonWithInt.Value;
+import io.qdrant.client.grpc.Points.Filter;
+import io.qdrant.client.grpc.Points.QueryPoints;
+import io.qdrant.client.grpc.Points.ScoredPoint;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,6 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -80,7 +85,7 @@ public class InterviewSessionService {
     private final BoardRepository boardRepository;
     private final OwnershipGuard ownershipGuard;
     private final EmbeddingModel embeddingModel;
-    private final EmbeddingStore<TextSegment> embeddingStore;
+    private final QdrantClient qdrantClient;
     private final InterviewerAgent interviewerAgent;
     private final GraderAgent graderAgent;
     private final CoachAgent coachAgent;
@@ -96,7 +101,7 @@ public class InterviewSessionService {
             BoardRepository boardRepository,
             OwnershipGuard ownershipGuard,
             @Lazy EmbeddingModel embeddingModel,
-            @Lazy EmbeddingStore<TextSegment> embeddingStore,
+            @Lazy QdrantClient qdrantClient,
             @Lazy InterviewerAgent interviewerAgent,
             @Lazy GraderAgent graderAgent,
             @Lazy CoachAgent coachAgent) {
@@ -106,7 +111,7 @@ public class InterviewSessionService {
         this.boardRepository = boardRepository;
         this.ownershipGuard = ownershipGuard;
         this.embeddingModel = embeddingModel;
-        this.embeddingStore = embeddingStore;
+        this.qdrantClient = qdrantClient;
         this.interviewerAgent = interviewerAgent;
         this.graderAgent = graderAgent;
         this.coachAgent = coachAgent;
@@ -360,19 +365,36 @@ public class InterviewSessionService {
             Set<UUID> scope = scopedNodeIds(topic);
             Embedding queryEmbedding =
                     embeddingModel.embed(topic.getLabel() != null ? topic.getLabel() : "").content();
-            EmbeddingSearchRequest request = EmbeddingSearchRequest.builder()
-                    .queryEmbedding(queryEmbedding)
-                    .maxResults(CONTEXT_OVERFETCH)
-                    .minScore(0.0)
-                    .filter(metadataKey("userId").isEqualTo(ownerId.toString()))
+            // Queried directly against QdrantClient (not via langchain4j's EmbeddingStore.search)
+            // and without requesting vectors back — see SearchService.search for why: newer
+            // Qdrant servers (Qdrant Cloud runs 1.19.x) reply with a "named vector" wire shape
+            // this client version doesn't parse, so langchain4j-qdrant's client-side re-scoring
+            // silently gets empty vectors and blows up.
+            QueryPoints request = QueryPoints.newBuilder()
+                    .setCollectionName(AiConfig.NODES_COLLECTION)
+                    .setQuery(QueryFactory.nearest(queryEmbedding.vectorAsList()))
+                    .setWithPayload(WithPayloadSelectorFactory.enable(true))
+                    .setLimit(CONTEXT_OVERFETCH)
+                    .setFilter(Filter.newBuilder()
+                            .addMust(ConditionFactory.matchKeyword("userId", ownerId.toString()))
+                            .build())
                     .build();
 
-            List<String> chunks = embeddingStore.search(request).matches().stream()
-                    .filter(match -> scope.contains(match.embedded().metadata().getUUID("nodeId")))
-                    .sorted(Comparator.comparingDouble((EmbeddingMatch<TextSegment> m) -> m.score())
-                            .reversed())
+            List<ScoredPoint> matches;
+            try {
+                matches = qdrantClient.queryAsync(request).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+
+            List<String> chunks = matches.stream()
+                    .filter(match -> {
+                        Value nodeIdValue = match.getPayloadMap().get("nodeId");
+                        return nodeIdValue != null && scope.contains(UUID.fromString(nodeIdValue.getStringValue()));
+                    })
+                    .sorted(Comparator.comparingDouble(ScoredPoint::getScore).reversed())
                     .limit(CHUNKS_PER_TOPIC)
-                    .map(match -> match.embedded().text())
+                    .map(match -> match.getPayloadMap().get("text_segment").getStringValue())
                     .toList();
 
             context.append("## ").append(topic.getLabel()).append('\n');
