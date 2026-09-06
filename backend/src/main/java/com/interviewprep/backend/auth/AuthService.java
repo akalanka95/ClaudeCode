@@ -46,6 +46,7 @@ public class AuthService {
             user.setEmail(email);
             user.setDisplayName(displayName);
             user.setAuthProvider(AuthProvider.GOOGLE);
+            user.setRole(Role.USER);
             user = appUserRepository.save(user);
 
             Board rootBoard = new Board();
@@ -67,6 +68,11 @@ public class AuthService {
 
     private CurrentUserResponse toResponse(AppUser user) {
         return new CurrentUserResponse(
-                user.getId(), user.getUsername(), user.getEmail(), user.getDisplayName(), user.getAuthProvider());
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getDisplayName(),
+                user.getAuthProvider(),
+                user.getRole());
     }
 }

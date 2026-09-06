@@ -18,6 +18,13 @@ export function LoginPage() {
     );
   }
 
+  function handleFreeTierLogin() {
+    login.mutate(
+      { username: "Test_01", password: "skill_loop" },
+      { onSuccess: () => navigate("/", { replace: true }) },
+    );
+  }
+
   return (
     <div className="flex h-dvh items-center justify-center overflow-y-auto bg-slate-50">
       <div className="w-[min(22rem,90vw)] rounded-lg bg-white p-6 shadow-sm">
@@ -62,6 +69,14 @@ export function LoginPage() {
         >
           Sign in with Google
         </a>
+        <button
+          type="button"
+          disabled={login.isPending}
+          onClick={handleFreeTierLogin}
+          className="mt-2 flex min-h-11 w-full items-center justify-center rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+        >
+          Login with FREE TIER
+        </button>
       </div>
     </div>
   );

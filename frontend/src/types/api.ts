@@ -233,12 +233,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export type UserRole = "ADMIN" | "USER";
+
 export interface CurrentUserResponse {
   id: string;
   username: string | null;
   email: string | null;
   displayName: string | null;
   authProvider: AuthProvider;
+  role: UserRole;
 }
 
 export interface AuthResponse {

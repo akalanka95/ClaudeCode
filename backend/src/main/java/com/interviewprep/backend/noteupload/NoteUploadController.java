@@ -1,6 +1,8 @@
 package com.interviewprep.backend.noteupload;
 
 import com.interviewprep.backend.auth.AppUserPrincipal;
+import com.interviewprep.backend.auth.Role;
+import com.interviewprep.backend.common.ForbiddenException;
 import com.interviewprep.backend.noteupload.dto.NoteUploadResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,9 @@ public class NoteUploadController {
             @PathVariable UUID nodeId,
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal AppUserPrincipal principal) {
+        if (principal.role() != Role.ADMIN) {
+            throw new ForbiddenException("Free tier not eligible");
+        }
         NoteUpload upload = noteUploadService.triggerSummarize(nodeId, file, principal.userId());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(toResponse(upload));
     }
