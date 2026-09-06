@@ -7,13 +7,25 @@ import Image from "@tiptap/extension-image";
 interface NoteEditorProps {
   content: string;
   onChange: (html: string) => void;
+  /**
+   * false renders the editor at normal readable sizing and lets it grow to fit its content,
+   * instead of the tiny sticky-note scale that fills a fixed-pixel-height Rnd box. These two
+   * always vary together today (dense <-> fixed-height desktop card, readable <-> auto-height
+   * mobile list card), so one flag drives both.
+   */
+  dense?: boolean;
 }
 
 const HIGHLIGHT_COLOR = "#fbbf24";
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1200;
 
-export function NoteEditor({ content, onChange }: NoteEditorProps) {
+const DENSE_CONTENT_CLASS =
+  "note-editor-no-drag h-full w-full resize-none overflow-y-auto text-[8px] leading-tight text-slate-800 focus:outline-none [&_h2]:text-[12px] [&_h2]:font-bold [&_h2]:leading-tight [&_h3]:text-[10px] [&_h3]:font-semibold [&_h3]:leading-tight [&_ul]:list-disc [&_ul]:pl-3 [&_ol]:list-decimal [&_ol]:pl-3 [&_li]:my-0 [&_img]:max-w-full";
+const READABLE_CONTENT_CLASS =
+  "note-editor-no-drag w-full resize-none text-sm leading-normal text-slate-800 focus:outline-none [&_h2]:text-lg [&_h2]:font-bold [&_h2]:leading-snug [&_h3]:text-base [&_h3]:font-semibold [&_h3]:leading-snug [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_img]:max-w-full";
+
+export function NoteEditor({ content, onChange, dense = true }: NoteEditorProps) {
   const [dropError, setDropError] = useState<string | null>(null);
 
   const editor = useEditor({
@@ -35,7 +47,7 @@ export function NoteEditor({ content, onChange }: NoteEditorProps) {
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     editorProps: {
       attributes: {
-        class: "note-editor-no-drag h-full w-full resize-none overflow-y-auto text-[8px] leading-tight text-slate-800 focus:outline-none [&_h2]:text-[12px] [&_h2]:font-bold [&_h2]:leading-tight [&_h3]:text-[10px] [&_h3]:font-semibold [&_h3]:leading-tight [&_ul]:list-disc [&_ul]:pl-3 [&_ol]:list-decimal [&_ol]:pl-3 [&_li]:my-0 [&_img]:max-w-full",
+        class: dense ? DENSE_CONTENT_CLASS : READABLE_CONTENT_CLASS,
       },
       handleDrop: (view, event, _slice, moved) => {
         if (moved) return false;
@@ -66,36 +78,42 @@ export function NoteEditor({ content, onChange }: NoteEditorProps) {
   if (!editor) return null;
 
   return (
-    <div className="flex h-full flex-col gap-1">
-      <Toolbar editor={editor} />
-      {dropError && <p className="note-editor-no-drag text-[8px] text-red-600">{dropError}</p>}
-      <div className="note-editor-no-drag flex-1 overflow-y-auto">
-        <EditorContent editor={editor} className="h-full" />
+    <div className={`flex flex-col gap-1 ${dense ? "h-full" : ""}`}>
+      <Toolbar editor={editor} dense={dense} />
+      {dropError && (
+        <p className={`note-editor-no-drag text-red-600 ${dense ? "text-[8px]" : "text-xs"}`}>{dropError}</p>
+      )}
+      <div className={dense ? "note-editor-no-drag flex-1 overflow-y-auto" : "note-editor-no-drag"}>
+        <EditorContent editor={editor} className={dense ? "h-full" : ""} />
       </div>
     </div>
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, dense }: { editor: Editor; dense: boolean }) {
+  const sizeClass = dense ? "px-1 text-[8px]" : "px-1.5 py-0.5 text-xs";
+  const buttonClass = (active: boolean) =>
+    `rounded font-semibold ${sizeClass} ${active ? "bg-black/15" : "hover:bg-black/10"}`;
+
   return (
     <div className="note-editor-no-drag flex flex-wrap items-center gap-1 border-b border-black/10 pb-1">
       <button
         type="button"
-        className={`rounded px-1 text-[8px] font-semibold ${editor.isActive("bold") ? "bg-black/15" : "hover:bg-black/10"}`}
+        className={buttonClass(editor.isActive("bold"))}
         onClick={() => editor.chain().focus().toggleBold().run()}
       >
         B
       </button>
       <button
         type="button"
-        className={`rounded px-1 text-[8px] italic ${editor.isActive("italic") ? "bg-black/15" : "hover:bg-black/10"}`}
+        className={`${buttonClass(editor.isActive("italic"))} italic`}
         onClick={() => editor.chain().focus().toggleItalic().run()}
       >
         I
       </button>
       <button
         type="button"
-        className={`rounded px-1 text-[8px] ${editor.isActive("highlight") ? "bg-black/15" : "hover:bg-black/10"}`}
+        className={buttonClass(editor.isActive("highlight"))}
         onClick={() => editor.chain().focus().toggleHighlight({ color: HIGHLIGHT_COLOR }).run()}
       >
         Highlight
@@ -104,7 +122,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       <button
         type="button"
         title="Heading"
-        className={`rounded px-1 text-[8px] font-bold ${editor.isActive("heading", { level: 2 }) ? "bg-black/15" : "hover:bg-black/10"}`}
+        className={buttonClass(editor.isActive("heading", { level: 2 }))}
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       >
         H2
@@ -112,7 +130,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       <button
         type="button"
         title="Subheading"
-        className={`rounded px-1 text-[8px] font-bold ${editor.isActive("heading", { level: 3 }) ? "bg-black/15" : "hover:bg-black/10"}`}
+        className={buttonClass(editor.isActive("heading", { level: 3 }))}
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       >
         H3
@@ -120,7 +138,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       <button
         type="button"
         title="Bullet list"
-        className={`rounded px-1 text-[8px] ${editor.isActive("bulletList") ? "bg-black/15" : "hover:bg-black/10"}`}
+        className={buttonClass(editor.isActive("bulletList"))}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
       >
         &bull; List
@@ -128,7 +146,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       <button
         type="button"
         title="Numbered list"
-        className={`rounded px-1 text-[8px] ${editor.isActive("orderedList") ? "bg-black/15" : "hover:bg-black/10"}`}
+        className={buttonClass(editor.isActive("orderedList"))}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       >
         1. List

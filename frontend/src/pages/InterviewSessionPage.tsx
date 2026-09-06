@@ -4,6 +4,7 @@ import { FeedbackPanel } from "../components/interview/FeedbackPanel";
 import { QuestionCard } from "../components/interview/QuestionCard";
 import { useInterviewSession } from "../hooks/useInterview";
 import { AppHeader } from "../components/common/AppHeader";
+import { BackButton } from "../components/common/BackButton";
 import { LoadingScreen } from "../components/common/LoadingScreen";
 
 export function InterviewSessionPage() {
@@ -38,12 +39,7 @@ export function InterviewSessionPage() {
     <div className="flex min-h-screen flex-col">
       <AppHeader />
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-4">
-        <button
-          className="flex min-h-11 items-center self-start text-sm text-blue-600 hover:underline"
-          onClick={() => navigate("/interview")}
-        >
-          &larr; Back to setup
-        </button>
+        <BackButton label="Back to setup" onClick={() => navigate("/interview")} />
 
         <h1 className="text-xl font-semibold text-slate-800">
           Mock Interview — {session.topics.map((t) => t.label ?? "Untitled").join(", ")}

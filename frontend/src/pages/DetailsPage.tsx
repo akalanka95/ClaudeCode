@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getNode, updateNodeDetails } from "../api/nodes";
 import type { NodeResponse } from "../types/api";
 import { AppHeader } from "../components/common/AppHeader";
+import { BackButton } from "../components/common/BackButton";
 import { LoadingScreen } from "../components/common/LoadingScreen";
 
 const MIN_FONT_SIZE = 12;
@@ -65,12 +66,7 @@ export function DetailsPage() {
     <div className="flex h-screen flex-col">
       <AppHeader />
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-3 overflow-hidden p-4">
-        <button
-          className="flex min-h-11 items-center self-start text-sm text-blue-600 hover:underline"
-          onClick={() => navigate(-1)}
-        >
-          &larr; Back to board
-        </button>
+        <BackButton label="Back to board" onClick={() => navigate(-1)} />
         <h1 className="text-xl font-semibold text-slate-800">{node?.label ?? "Details"}</h1>
         <div className="relative min-h-0 flex-1">
           <textarea

@@ -20,7 +20,7 @@ export function TopicPicker({ topics, selectedIds, onToggle, isLoading }: TopicP
   }
 
   return (
-    <div className="flex flex-col divide-y divide-slate-100 rounded border border-slate-200">
+    <div className="flex max-h-72 flex-col divide-y divide-slate-100 overflow-y-auto rounded border border-slate-200">
       {topics.map((topic) => {
         const checked = selectedIds.includes(topic.nodeId);
         return (

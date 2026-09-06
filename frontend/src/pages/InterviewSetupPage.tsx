@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TopicPicker } from "../components/interview/TopicPicker";
 import { useCreateInterviewSession, useInterviewHistory, useTopicOptions } from "../hooks/useInterview";
 import { AppHeader } from "../components/common/AppHeader";
+import { BackButton } from "../components/common/BackButton";
 
 const MIN_QUESTIONS = 3;
 const MAX_QUESTIONS = 10;
@@ -32,12 +33,7 @@ export function InterviewSetupPage() {
     <div className="flex min-h-screen flex-col">
       <AppHeader />
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-4">
-        <button
-          className="flex min-h-11 items-center self-start text-sm text-blue-600 hover:underline"
-          onClick={() => navigate("/")}
-        >
-          &larr; Back to board
-        </button>
+        <BackButton label="Back to board" onClick={() => navigate("/")} />
 
         <h1 className="text-xl font-semibold text-slate-800">Mock Interview</h1>
         <p className="text-sm text-slate-500">
@@ -88,7 +84,7 @@ export function InterviewSetupPage() {
         {historyQuery.data && historyQuery.data.length > 0 && (
           <div className="mt-4">
             <h2 className="mb-2 text-sm font-semibold text-slate-700">Past sessions</h2>
-            <div className="flex flex-col divide-y divide-slate-100 rounded border border-slate-200">
+            <div className="flex max-h-72 flex-col divide-y divide-slate-100 overflow-y-auto rounded border border-slate-200">
               {historyQuery.data.map((session) => (
                 <button
                   key={session.id}
