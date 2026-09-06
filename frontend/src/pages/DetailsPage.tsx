@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getNode, updateNodeDetails } from "../api/nodes";
 import type { NodeResponse } from "../types/api";
 import { AppHeader } from "../components/common/AppHeader";
+import { LoadingScreen } from "../components/common/LoadingScreen";
 
 const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 28;
@@ -54,7 +55,7 @@ export function DetailsPage() {
   }
 
   if (loading) {
-    return <div className="p-4 text-slate-500">Loading...</div>;
+    return <LoadingScreen />;
   }
   if (error && !node) {
     return <div className="p-4 text-red-600">{error}</div>;

@@ -4,6 +4,7 @@ import { FeedbackPanel } from "../components/interview/FeedbackPanel";
 import { QuestionCard } from "../components/interview/QuestionCard";
 import { useInterviewSession } from "../hooks/useInterview";
 import { AppHeader } from "../components/common/AppHeader";
+import { LoadingScreen } from "../components/common/LoadingScreen";
 
 export function InterviewSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -24,7 +25,7 @@ export function InterviewSessionPage() {
   } = useInterviewSession(sessionId);
 
   if (isLoading) {
-    return <div className="p-4 text-slate-500">Loading...</div>;
+    return <LoadingScreen />;
   }
   if (isError || !session) {
     return <div className="p-4 text-red-600">Failed to load this interview session.</div>;

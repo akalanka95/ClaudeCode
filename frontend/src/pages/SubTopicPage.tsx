@@ -4,6 +4,7 @@ import { getNode } from "../api/nodes";
 import type { NodeResponse } from "../types/api";
 import { useBoard } from "../hooks/useBoard";
 import { AppHeader } from "../components/common/AppHeader";
+import { LoadingScreen } from "../components/common/LoadingScreen";
 import { SyncReferenceSidebar } from "../components/board/SyncReferenceSidebar";
 import { NoteBoard } from "../components/notes/NoteBoard";
 import { AskChatGptButton } from "../components/details/AskChatGptButton";
@@ -42,7 +43,7 @@ export function SubTopicPage() {
       : [];
 
   if (loading) {
-    return <div className="p-4 text-slate-500">Loading...</div>;
+    return <LoadingScreen />;
   }
   if (error || !nodeId || !node) {
     return <div className="p-4 text-red-600">{error ?? "Subtopic not found."}</div>;
