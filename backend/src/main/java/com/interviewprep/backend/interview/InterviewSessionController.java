@@ -1,6 +1,8 @@
 package com.interviewprep.backend.interview;
 
 import com.interviewprep.backend.auth.AppUserPrincipal;
+import com.interviewprep.backend.auth.Role;
+import com.interviewprep.backend.common.ForbiddenException;
 import com.interviewprep.backend.interview.dto.CreateInterviewSessionRequest;
 import com.interviewprep.backend.interview.dto.InterviewSessionResponse;
 import com.interviewprep.backend.interview.dto.SubmitAnswerRequest;
@@ -30,6 +32,9 @@ public class InterviewSessionController {
     public ResponseEntity<InterviewSessionResponse> createSession(
             @Valid @RequestBody CreateInterviewSessionRequest request,
             @AuthenticationPrincipal AppUserPrincipal principal) {
+        if (principal.role() != Role.ADMIN) {
+            throw new ForbiddenException("Free tier not eligible");
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(interviewSessionService.createSession(request, principal.userId()));
     }

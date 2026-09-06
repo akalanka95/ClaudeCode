@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getApiErrorMessage, isForbiddenError } from "../api/client";
 import { TopicPicker } from "../components/interview/TopicPicker";
 import { useCreateInterviewSession, useInterviewHistory, useTopicOptions } from "../hooks/useInterview";
 import { AppHeader } from "../components/common/AppHeader";
@@ -68,9 +69,16 @@ export function InterviewSetupPage() {
           />
         </div>
 
-        {createSession.isError && (
-          <div className="text-sm text-red-600">Failed to start the interview. Try again.</div>
-        )}
+        {createSession.isError &&
+          (isForbiddenError(createSession.error) ? (
+            <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {getApiErrorMessage(createSession.error, "Free tier not eligible")}
+            </div>
+          ) : (
+            <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+              Failed to start the interview. Try again.
+            </div>
+          ))}
 
         <button
           type="button"

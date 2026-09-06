@@ -31,6 +31,7 @@ public class JwtService {
                 .subject(user.getId().toString())
                 .claim("username", user.getUsername())
                 .claim("displayName", user.getDisplayName())
+                .claim("role", user.getRole().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(expiration)))
                 .signWith(key)
@@ -40,6 +41,10 @@ public class JwtService {
     public AppUserPrincipal parseToken(String token) {
         Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
         UUID userId = UUID.fromString(claims.getSubject());
-        return new AppUserPrincipal(userId, claims.get("username", String.class), claims.get("displayName", String.class));
+        return new AppUserPrincipal(
+                userId,
+                claims.get("username", String.class),
+                claims.get("displayName", String.class),
+                Role.valueOf(claims.get("role", String.class)));
     }
 }

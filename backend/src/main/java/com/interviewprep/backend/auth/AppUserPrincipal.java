@@ -7,4 +7,4 @@ import java.util.UUID;
  * Controllers pull the current user's id out of this via {@code @AuthenticationPrincipal} and
  * pass it down to service methods for ownership checks (see {@link OwnershipGuard}).
  */
-public record AppUserPrincipal(UUID userId, String username, String displayName) {}
+public record AppUserPrincipal(UUID userId, String username, String displayName, Role role) {}

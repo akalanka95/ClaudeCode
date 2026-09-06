@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useCurrentUser } from "../../hooks/useAuth";
 import { useNoteBlocks } from "../../hooks/useNoteBlocks";
 import { useNoteUploads } from "../../hooks/useNoteUploads";
 import { NoteBlockCard } from "./NoteBlockCard";
@@ -15,9 +16,21 @@ const EMPTY_STATE_MESSAGE = 'No notes yet. Click "+ Add note" to start taking no
 export function NoteBoard({ nodeId }: NoteBoardProps) {
   const { noteBlocksQuery, createNoteBlock, updateNoteBlock, deleteNoteBlock } = useNoteBlocks(nodeId);
   const { activeUploadQuery, uploadNoteFile, isSummarizing } = useNoteUploads(nodeId);
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === "ADMIN";
+  const [restrictedMessage, setRestrictedMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const noteBlocks = noteBlocksQuery.data ?? [];
   const notesByCreatedAt = [...noteBlocks].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+  function handleUploadClick() {
+    if (!isAdmin) {
+      setRestrictedMessage("Free tier not eligible");
+      return;
+    }
+    setRestrictedMessage(null);
+    fileInputRef.current?.click();
+  }
 
   function bringToFront(id: string) {
     const maxZIndex = noteBlocks.reduce((max, block) => Math.max(max, block.zIndex), -1);
@@ -58,7 +71,7 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
             <button
               type="button"
               className="rounded bg-slate-600 px-2.5 py-1 text-xs text-white hover:bg-slate-500 disabled:opacity-50"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleUploadClick}
               disabled={isSummarizing}
             >
               {isSummarizing ? "Summarizing..." : "Upload notes"}
@@ -70,6 +83,11 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
             >
               + Add note
             </button>
+            {restrictedMessage && (
+              <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                {restrictedMessage}
+              </span>
+            )}
           </div>
           {uploadErrorMessage && <p className="text-xs text-red-600">{uploadErrorMessage}</p>}
         </div>
@@ -98,7 +116,7 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
             <button
               type="button"
               className="rounded bg-slate-600 px-2.5 py-1 text-xs text-white hover:bg-slate-500 disabled:opacity-50"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleUploadClick}
               disabled={isSummarizing}
             >
               {isSummarizing ? "Summarizing..." : "Upload notes"}
@@ -110,6 +128,11 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
             >
               + Add note
             </button>
+            {restrictedMessage && (
+              <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                {restrictedMessage}
+              </span>
+            )}
           </div>
           {uploadErrorMessage && (
             <p className="max-w-xs text-right text-xs text-red-600">{uploadErrorMessage}</p>

@@ -46,6 +46,10 @@ public class AppUser {
     @Column(name = "auth_provider", nullable = false, length = 20)
     private AuthProvider authProvider;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private Role role;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
