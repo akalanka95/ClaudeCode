@@ -1,12 +1,20 @@
 # Adaptive Interview Prep System
 
 An interview-prep knowledge map: create Topics (Java, Spring Boot, Kafka, ...), connect them on
-a node-graph whiteboard, drill into each Topic's own map of Subtopics recursively, and attach
-free-text Details/notes to any Topic. Everything persists.
+a node-graph whiteboard, drill into each Topic's own board of Subtopics, and attach free-text
+Details, a sticky-note board, and reference links to any Topic. Everything persists. Drilling
+into a Topic goes one level deep in the UI: a root-board Topic opens its own graph of Subtopics,
+and a Subtopic opens a dedicated page (Details/sticky notes/Sync/References) rather than a
+further nested graph — see `ARCHITECTURE.md`'s frontend rules for why.
 
-Phase 1 scope only — no auth, no cloud deployment, no rich content authoring (handwriting/OCR/
-imports are future phases), no AI features, no multi-user, no undo/redo, no search. Don't add
-these without the user asking; they're deliberately deferred.
+The original Phase 1 scope (board/topics/details only — no auth, cloud deployment, AI features,
+or search) has since been extended: auth (hardcoded `admin` account + Google OAuth, data scoped
+per user), cloud deployment (see `DEPLOYMENT.md`), AI features (subtopic Sync web search,
+handwritten/PDF note-upload summarization, a mock-interview simulator), and semantic search are
+all implemented — see `README.md`'s "What's implemented" for the current feature list. Still
+explicitly deferred: undo/redo, and real-time multi-user collaboration on the same board (auth
+separates data per account; it doesn't add shared/live editing of one board). Don't add these
+without the user asking.
 
 **Before implementing anything — a new feature, a bug fix, any code change — read
 `ARCHITECTURE.md`.** It holds the backend/frontend implementation rules and the mandatory
@@ -34,10 +42,13 @@ API design, milestone order) — background reading, not a substitute for `ARCHI
 - `frontend/` — React 19 + TypeScript + Vite. Canvas is React Flow (`@xyflow/react`); data
   fetching via TanStack Query; routing via React Router; styling via Tailwind v4 (CSS-based
   config, no `tailwind.config.js` — see `src/index.css`).
-- `docker-compose.yml` — local Postgres only (`interviewprep`/`interviewprep`/`interviewprep`
-  on `localhost:5432`).
+- `sync-agent/` — small Node/Express service (Claude Agent SDK) the backend calls for the Sync
+  and note-upload-summarization features; optional, billed against a Claude Code subscription.
+- `docker-compose.yml` — Postgres (`interviewprep`/`interviewprep`/`interviewprep` on
+  `localhost:5432`) and Qdrant (the vector store for semantic search) for local dev; can also
+  build and run the backend + frontend together (`docker compose up --build`).
 
 ## Running locally
 
-See `README.md` for the three-step run (Postgres via Docker, `./mvnw spring-boot:run`,
-`npm run dev`).
+See `README.md` for the full local run steps (Postgres + Qdrant via Docker, `./mvnw
+spring-boot:run`, the optional `sync-agent` sidecar, `npm run dev`).

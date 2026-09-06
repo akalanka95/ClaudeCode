@@ -82,6 +82,36 @@ API_BASE=https://<your-backend>.onrender.com/api/v1 node scripts/seed-mock-data.
 
 It talks to the real REST API, so it works against a deployed backend exactly like a local one.
 
+### 4. Optional: enable semantic search (Qdrant Cloud)
+
+Semantic search needs a reachable Qdrant instance plus metered Anthropic/Voyage keys. Since
+Qdrant isn't part of the Render/Vercel stack above, use Qdrant Cloud's free tier instead of
+deploying it yourself:
+
+1. Sign up at [cloud.qdrant.io](https://cloud.qdrant.io) and create a free cluster. From its
+   dashboard, note the **host** (e.g. `xyz-abc.us-east.aws.cloud.qdrant.io` — no `https://` or
+   port) and an **API key**.
+2. Get an Anthropic key (console.anthropic.com > API Keys) and a Voyage key
+   (dashboard.voyageai.com > API Keys) — **set a spend/usage limit on both first**, since a
+   public search bar with no login can rack up real cost. Voyage's free tier without a payment
+   method on file is capped at 3 requests/minute, which a bulk reindex of more than a couple
+   nodes will blow through with `429`s.
+3. Set these env vars on the backend Render service, then redeploy:
+   ```
+   APP_QDRANT_HOST=<your-cluster-host>
+   APP_QDRANT_GRPC_PORT=6334
+   APP_QDRANT_USE_TLS=true
+   APP_QDRANT_API_KEY=<qdrant-api-key>
+   ANTHROPIC_API_KEY=<anthropic-key>
+   VOYAGE_API_KEY=<voyage-key>
+   ```
+4. Backfill the index once:
+   ```
+   curl -X POST https://<your-backend>.onrender.com/api/v1/search/reindex
+   ```
+5. Flip the search bar on in the frontend by setting `VITE_ENABLE_SEARCH=true` on the frontend
+   service and redeploying it.
+
 ### Caveats
 
 - Free-tier services on Render/Railway spin down when idle — the first request after a while can
