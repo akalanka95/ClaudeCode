@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/useAuth";
 import { getStoredToken } from "../../api/authToken";
+import { LoadingScreen } from "./LoadingScreen";
 
 export function RequireAuth() {
   const { data: user, isLoading, isError } = useCurrentUser();
@@ -9,7 +10,7 @@ export function RequireAuth() {
     return <Navigate to="/login" replace />;
   }
   if (isLoading) {
-    return <div className="p-4 text-slate-500">Loading...</div>;
+    return <LoadingScreen />;
   }
   if (isError || !user) {
     return <Navigate to="/login" replace />;

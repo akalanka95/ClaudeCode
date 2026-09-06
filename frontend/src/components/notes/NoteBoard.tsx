@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useNoteBlocks } from "../../hooks/useNoteBlocks";
 import { useNoteUploads } from "../../hooks/useNoteUploads";
 import { NoteBlockCard } from "./NoteBlockCard";
+import { LoadingScreen } from "../common/LoadingScreen";
 
 interface NoteBoardProps {
   nodeId: string;
@@ -29,7 +30,7 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
   }
 
   if (noteBlocksQuery.isLoading) {
-    return <div className="p-4 text-sm text-slate-500">Loading notes...</div>;
+    return <LoadingScreen label="Loading notes..." fullScreen={false} />;
   }
 
   return (
@@ -77,7 +78,7 @@ export function NoteBoard({ nodeId }: NoteBoardProps) {
           </p>
         </div>
       )}
-      <div className="isolate">
+      <div className="isolate h-full w-full">
         {noteBlocks.map((noteBlock) => (
           <NoteBlockCard
             key={noteBlock.id}

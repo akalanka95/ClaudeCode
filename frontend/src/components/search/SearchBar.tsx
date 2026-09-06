@@ -3,6 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { useSearch } from "../../hooks/useSearch";
 import type { SearchResultResponse } from "../../types/api";
 
+function SearchIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
 interface SearchResultsProps {
   isFetching: boolean;
   results: SearchResultResponse[];
@@ -75,9 +93,9 @@ export function SearchBar() {
         type="button"
         onClick={() => setMobileExpanded(true)}
         aria-label="Search"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-slate-500 hover:bg-slate-50 sm:hidden"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-600 hover:bg-slate-50 sm:hidden"
       >
-        <span aria-hidden>⌕</span>
+        <SearchIcon className="h-6 w-6" />
       </button>
 
       {mobileExpanded && (
@@ -96,7 +114,7 @@ export function SearchBar() {
                 if (e.key === "Escape") closeMobile();
               }}
               placeholder="Search your map..."
-              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none"
+              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-base text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none"
             />
             <button
               type="button"

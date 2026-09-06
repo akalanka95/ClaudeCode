@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getRootBoard } from "../api/boards";
+import { LoadingScreen } from "../components/common/LoadingScreen";
 
 export function HomeRedirect() {
   const navigate = useNavigate();
@@ -9,5 +10,5 @@ export function HomeRedirect() {
     getRootBoard().then((root) => navigate(`/board/${root.boardId}`, { replace: true }));
   }, [navigate]);
 
-  return <div className="p-4 text-slate-500">Loading...</div>;
+  return <LoadingScreen />;
 }

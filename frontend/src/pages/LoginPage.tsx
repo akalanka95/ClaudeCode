@@ -19,7 +19,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-50">
+    <div className="flex h-dvh items-center justify-center overflow-y-auto bg-slate-50">
       <div className="w-[min(22rem,90vw)] rounded-lg bg-white p-6 shadow-sm">
         <div className="mb-5 flex justify-center">
           <BrandMark linkable={false} />
@@ -28,14 +28,14 @@ export function LoginPage() {
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <input
             autoFocus
-            className="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
           <input
             type="password"
-            className="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
