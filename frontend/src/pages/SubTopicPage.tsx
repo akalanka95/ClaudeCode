@@ -7,7 +7,6 @@ import { AppHeader } from "../components/common/AppHeader";
 import { LoadingScreen } from "../components/common/LoadingScreen";
 import { SyncReferenceSidebar } from "../components/board/SyncReferenceSidebar";
 import { NoteBoard } from "../components/notes/NoteBoard";
-import { AskChatGptButton } from "../components/details/AskChatGptButton";
 
 const SYNC_ENABLED = import.meta.env.VITE_ENABLE_SYNC !== "false";
 
@@ -58,7 +57,6 @@ export function SubTopicPage() {
         </main>
         {SYNC_ENABLED && <SyncReferenceSidebar nodeId={nodeId} />}
       </div>
-      <AskChatGptButton />
     </div>
   );
 }

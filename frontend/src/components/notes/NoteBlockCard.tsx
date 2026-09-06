@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Rnd } from "react-rnd";
 import type { NoteBlockResponse, UpdateNoteBlockRequest } from "../../types/api";
 import { NoteEditor } from "./NoteEditor";
+import { COLOR_CLASSES, COLOR_ORDER, COLOR_SWATCH_CLASSES } from "./noteColors";
 
 interface NoteBlockCardProps {
   noteBlock: NoteBlockResponse;
@@ -10,21 +11,6 @@ interface NoteBlockCardProps {
   onBringToFront: (id: string) => void;
 }
 
-const COLOR_CLASSES: Record<string, string> = {
-  yellow: "bg-yellow-100 border-yellow-300",
-  pink: "bg-pink-100 border-pink-300",
-  blue: "bg-blue-100 border-blue-300",
-  green: "bg-green-100 border-green-300",
-};
-
-const COLOR_SWATCH_CLASSES: Record<string, string> = {
-  yellow: "bg-yellow-400",
-  pink: "bg-pink-400",
-  blue: "bg-blue-400",
-  green: "bg-green-400",
-};
-
-const COLOR_ORDER = ["yellow", "pink", "blue", "green"];
 const MINIMIZED_HEIGHT = 36;
 const SAVE_DEBOUNCE_MS = 600;
 const VIEWPORT_MARGIN = 16;
