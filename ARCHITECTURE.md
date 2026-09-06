@@ -7,9 +7,33 @@ working around it.
 
 ## Backend rules (Spring Boot, `backend/src/main/java/com/interviewprep/backend`)
 
-- **Package-by-domain**, not layer-by-tech: `board/`, `node/`, `edge/`, `common/`, `config/`.
-  A new domain gets its own package with the same internal shape (entity, repository, service,
+- **Package-by-domain**, not layer-by-tech: `auth/`, `board/`, `common/`, `config/`, `edge/`,
+  `interview/`, `node/`, `noteblock/`, `noteupload/`, `reference/`, `search/`, `sync/`. A new
+  domain gets its own package with the same internal shape (entity, repository, service,
   controller, `dto/`), not a new folder under a shared `controllers/`/`services/` tree.
+- **Ownership scoping goes through `auth/OwnershipGuard`.** Only `Board.ownerId` and
+  `InterviewSession.ownerId` are actual owner columns; every other table (node, edge, note block,
+  note upload, reference material, sync run) is scoped transitively through `board_id` or
+  `node_id -> board_id`. Add a new `isXOwnedBy` check there rather than querying `owner_id`
+  directly on a table that doesn't have one, and don't add an `owner_id` column to a table that
+  can already be scoped transitively.
+- **A background job that calls an external service (the `sync-agent` sidecar, Anthropic/Voyage)
+  follows the Sync/NoteUpload pattern**: a status entity with `PENDING`/`RUNNING`/`COMPLETED`/
+  `FAILED`, a controller that saves the `PENDING` row and returns immediately, and an `@Async`
+  runner (its own named executor bean in `config/AsyncConfig`) that flips it to `RUNNING`, does
+  the slow call, and saves the terminal state. The initial save must happen **outside** any
+  `@Transactional` block and commit before the async dispatch — see the comments in
+  `SubtopicSyncService.triggerSync` and `NoteUploadService.triggerSummarize` — otherwise the
+  background thread can query for the row before the enclosing transaction commits it, find
+  nothing, and the run gets stuck at `PENDING` forever. Each save inside the runner is its own
+  short transaction for the same reason: wrapping the whole runner in one `@Transactional` hides
+  the `RUNNING` update from polling GET requests for as long as the external call takes.
+- **Optional AI integrations must not block startup.** `config/AiConfig`'s chat/embedding/Qdrant
+  beans are all `@Lazy` because building the Anthropic/Voyage clients validates the API key
+  eagerly and connecting to Qdrant is a real network call; none of that should run before these
+  optional, metered credentials are known to be configured. This mirrors how the `sync-agent`
+  sidecar is optional: the rest of the app works without it, and only the dependent feature
+  (Sync, note-upload summarization, semantic search) fails at request time until it's set up.
 - **Entities use plain UUID FK columns** (e.g. `Node.boardId`, `Board.parentNodeId`) — no
   bidirectional JPA `@ManyToOne`/`@OneToMany` relationship mappings. This is intentional because
   `Board` and `Node` reference each other circularly; don't "clean this up" into a relationship
@@ -49,9 +73,23 @@ working around it.
   and the relevant `api/*.ts` function?" as a mandatory check whenever a backend DTO changes.
 - **Styling is Tailwind utility classes inline.** Don't introduce CSS modules, styled-components,
   or a component library without discussing it first.
+- **Auth gates routing, not individual fetches**: every route except `/login` and
+  `/oauth/callback` sits under `<RequireAuth>` in `App.tsx`, which checks for a stored JWT
+  (`api/authToken.ts`, `localStorage`) and `useCurrentUser()` (`hooks/useAuth.ts`) and redirects
+  to `/login` otherwise. `api/client.ts` attaches the stored token to every request; don't
+  duplicate auth checks inside individual pages/components.
+- **"Subtopic board" is a frontend-only distinction, not a backend flag**: `BoardCanvas.tsx`
+  computes `isSubtopicBoard = board.parentNode !== null`, i.e. any board that isn't the root. A
+  Topic on the root board opens its child board as another graph (`/board/:childBoardId`,
+  "Open map"); a Topic that's already on a subtopic board instead opens `/node/:nodeId/subtopic`
+  ("Open subtopic") — a dedicated page with a sticky-note board, Details, Sync, and Reference
+  Materials, not a further nested graph. This caps the graph-drilling UI at two levels even
+  though the backend still creates a child board for every `TOPIC` node regardless of depth (see
+  the data model invariant below) — don't assume "no further nesting" is enforced server-side.
 - **Checklist for a new frontend capability**: update `types/api.ts` → add/update an `api/`
   function → add/update a hook if the data is cached or reused → build the component/page →
-  wire it into `App.tsx` routing if it's a new page.
+  wire it into `App.tsx` routing if it's a new page (inside `<RequireAuth>` unless it must be
+  reachable while logged out).
 
 ## Data model invariants
 
@@ -63,7 +101,13 @@ working around it.
   `NodeService.createNode`): the node is persisted first with `childBoardId = null`, then its
   child board is created referencing the now-existing node id, then the node is updated to point
   at that board. This avoids the circular-FK chicken-and-egg problem. Keep this pattern if you
-  touch node creation — don't "simplify" it into a single insert.
+  touch node creation — don't "simplify" it into a single insert. This happens unconditionally
+  for every `TOPIC` node, including ones on a subtopic board that the frontend will never
+  navigate into as a graph (see the frontend rule above) — don't special-case it away by depth.
+- **NoteBlock, ReferenceMaterial, and NoteUpload are keyed by `node_id`, not `board_id`**, and are
+  independent of the Board/Node graph tree — they're per-Topic attachments (a sticky-note board,
+  saved links, and AI-summarized uploads respectively), not additional graph nodes. They cascade
+  on their owning node's deletion the same way Boards do.
 - **Deleting a Node cascades** (DB-level `ON DELETE CASCADE` on `board.parent_node_id ->
   node.id`) through its child Board and everything nested under it, recursively. Edges
   referencing a deleted node cascade too. Don't add application-level recursive-delete logic —

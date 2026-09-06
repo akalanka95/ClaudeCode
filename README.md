@@ -1,8 +1,10 @@
 # Adaptive Interview Prep System
 
-Phase 1: create topics, connect them on a node-graph map, drill into subtopics recursively,
-and attach plain-text details/notes to any topic. Everything persists to Postgres via a
-Spring Boot API.
+An interview-prep knowledge map: create topics, connect them on a node-graph whiteboard, drill
+into each topic's own board of subtopics, and attach free-text details, a sticky-note board, and
+reference links to any topic. Layered on top: AI-assisted research (Sync), handwritten/PDF note
+summarization, semantic search, and a mock-interview simulator. Everything persists to Postgres
+via a Spring Boot API.
 
 **Live demo**: _add your deployed URL here once you've followed `DEPLOYMENT.md`_.
 
@@ -12,8 +14,9 @@ Spring Boot API.
 - **Frontend**: React 19 + TypeScript + Vite, React Flow (`@xyflow/react`) for the map canvas,
   TanStack Query for data fetching, React Router for drill-down navigation, Tailwind CSS.
 - **sync-agent**: a small Node service (Express + `@anthropic-ai/claude-agent-sdk`) that the
-  backend calls internally to run the subtopic Sync feature's web search, billed against your
-  Claude Code subscription rather than a separate Anthropic API account.
+  backend calls internally to run the subtopic Sync feature's web search and the note-upload
+  feature's vision-based handwriting/PDF summarization, billed against your Claude Code
+  subscription rather than a separate Anthropic API account.
 - **Semantic search**: LangChain4j inside the backend (Anthropic + Voyage AI, metered API keys)
   indexes Topic/Subtopic/Note content into Qdrant for the search bar.
 
@@ -72,8 +75,9 @@ and either Docker or a local PostgreSQL instance.
    method at the [Voyage dashboard](https://dashboard.voyageai.com/) (free tokens still apply)
    before relying on this for anything beyond a quick smoke test.
 
-4. **sync-agent** (from `sync-agent/`) — powers the subtopic Sync button; the rest of the app
-   works without it, but Sync requests will fail until it's running.
+4. **sync-agent** (from `sync-agent/`) — powers the subtopic Sync button and note-upload
+   summarization; the rest of the app works without it, but those two features will fail until
+   it's running.
    ```
    npm install
    cp .env.example .env
@@ -104,40 +108,55 @@ docker compose up --build
 ```
 
 Brings up Postgres, Qdrant, the backend, and the frontend together (`http://localhost:5173`) with
-no manual Maven/npm steps. The Sync feature is disabled in this build (see `DEPLOYMENT.md`); the
-`sync-agent` sidecar still needs to be run manually if you want it. Semantic search works in this
+no manual Maven/npm steps. The Sync panel and Reference Materials panel are hidden in this build
+(see `DEPLOYMENT.md`); the `sync-agent` sidecar still needs to be run manually if you want them.
+The subtopic page's "Upload notes" button stays visible either way and will fail until
+`sync-agent` is running, since it depends on the same sidecar. Semantic search works in this
 build if `ANTHROPIC_API_KEY`/`VOYAGE_API_KEY` are set in your shell before running the command
 (passed through to the `backend` service — see `docker-compose.yml`); otherwise search requests
 fail and everything else works normally. See `DEPLOYMENT.md` for deploying this to free-tier
 hosting for a live demo link.
 
-## What's implemented (Phase 1)
+## What's implemented
 
+**Board & topics**
 - Create/rename/delete Topic and Note nodes on a board; drag to reposition (persisted).
 - Connect nodes with edges; delete edges.
-- Click a Topic to drill into its own board of subtopics — recursively, to any depth — with a
-  breadcrumb trail back up.
+- Click a Topic on the root board to drill into its own board of subtopics, with a breadcrumb
+  trail back up. Each subtopic node carries a completion checkbox, rolled up into a progress bar
+  on its parent Topic.
+- Click a subtopic (a Topic node one level below the root) to open a dedicated subtopic page
+  instead of a further nested graph — the backend still creates a child board for it, but the UI
+  routes there via "Details"/the sticky-note board/Sync/Reference Materials instead.
 - A "Details" view per Topic for free-text notes.
-- A subtopic page's Sync button, which uses Claude's web search (via the `sync-agent` sidecar
-  and the Claude Agent SDK) to fetch and summarize recent developments related to that topic,
-  with a visible history per subtopic.
+- A per-subtopic sticky-note board: draggable, resizable, colored, minimizable rich-text note
+  blocks (TipTap editor).
+- A per-subtopic Reference Materials panel: save links, with title/description/preview image
+  auto-fetched server-side.
 
-## What's implemented (Phase 2, in progress)
-
+**AI features**
+- Sync (subtopic page): uses Claude's web search (via the `sync-agent` sidecar and the Claude
+  Agent SDK) to fetch and summarize recent developments related to that subtopic, with a visible
+  run history.
+- Note upload (subtopic page): attach a photo of handwritten notes or a PDF; the `sync-agent`
+  sidecar's vision-capable summarization transcribes and condenses it into a new sticky note.
+- A mock-interview multi-agent simulator (Interviewer/Grader/Coach agents), scoped to a chosen
+  topic.
 - Semantic search (search bar in the top nav): Topic/Subtopic labels, Details content, Note
   text, and note-block content are embedded (Voyage AI) into Qdrant via LangChain4j as they're
   created/edited, and searched by meaning rather than exact text. Optional — see "Semantic
   search" above.
-- A mock-interview multi-agent simulator (Interviewer/Grader/Coach agents).
-- Auth: sign in as the single hardcoded `admin` account, or with any Google account (which
+
+**Auth**
+- Sign in as the single hardcoded `admin` account, or with any Google account (which
   auto-provisions a new, fully separate topic tree on first login). Every board/topic/note/
   interview session and the Qdrant search index are scoped per user.
 
-Explicitly out of scope for Phase 1: cloud deployment, rich content authoring (handwriting/OCR/
-imports), further AI features beyond subtopic Sync and the mock interview, undo/redo.
-See `backend`/`frontend` source for structure; package-by-domain on the backend
-(`board/`, `node/`, `edge/`, `auth/`, `common/`, `config/`), feature folders on the frontend
-(`api/`, `hooks/`, `components/board/`, `pages/`).
+Explicitly out of scope: cloud deployment beyond the free-tier demo setup in `DEPLOYMENT.md`,
+undo/redo, multi-user collaboration on the same tree. See `backend`/`frontend` source for
+structure; package-by-domain on the backend (`auth/`, `board/`, `common/`, `config/`, `edge/`,
+`interview/`, `node/`, `noteblock/`, `noteupload/`, `reference/`, `search/`, `sync/`), feature
+folders on the frontend (`api/`, `hooks/`, `components/<feature>/`, `pages/`).
 
 ## Contributing
 
